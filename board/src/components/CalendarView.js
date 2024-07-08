@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Grid, Text } from '@chakra-ui/react';
+import { Box, Grid, Text, Table, Tr, Td, Tbody } from '@chakra-ui/react';
 
 const CalendarView = ({ currentDate }) => {
   const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -27,7 +27,7 @@ const CalendarView = ({ currentDate }) => {
         opacity={isWeekend ? 0.6 : 0.9}
         bg={isWeekend ? '#F0F0F0' : 'white'}
         width="249px"
-        height="350px"
+        height="750px"
         border={isToday ? '1px solid #ED7D31' : '1px solid gray'}
         textAlign="left"
         paddingTop={0}
@@ -35,6 +35,23 @@ const CalendarView = ({ currentDate }) => {
         <Text fontSize='20px' fontWeight={isToday ? '500' : 'normal'} color={isToday ? '#ED7D31' : (isWeekend ? 'gray.400' : 'inherit')}>
           {i}
         </Text>
+        {[...Array(10)].map((_, idx) => (
+          <Box key={`nested-table-${i}-${idx}`} overflow="hidden" fontSize="5px" mb={1}>
+            <Table size="sm" variant="simple">
+              <Tbody>
+                <Tr>
+                  <Td colSpan={2}>Client</Td>
+                </Tr>
+                <Tr>
+                  <Td>1</Td>
+                  <Td>2</Td>
+                  <Td>3</Td>
+                  <Td>4</Td>
+                </Tr>
+              </Tbody>
+            </Table>
+          </Box>
+        ))}
       </Box>
     );
   }

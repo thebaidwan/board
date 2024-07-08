@@ -90,7 +90,7 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
       >
         <ModalHeader display="flex" alignItems="center" justifyContent="center" pb="20px" position="relative">
           <Box fontWeight="600" fontSize="20px">Add Job</Box>
-          <Box position="absolute" top="12px" right="12px">
+          <Box position="absolute" top="1px" right="1px">
             <Box
               as={X}
               size={24}
@@ -194,7 +194,10 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
             fontSize="18px"
             height="36px"
             width="120px"
-            onClick={handleSave}
+            onClick={() => {
+              handleSave();
+              onClose();
+            }}
           >
             Save
           </Button>

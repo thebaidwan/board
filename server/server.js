@@ -17,6 +17,7 @@ app.use(express.json());
 MongoClient.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true })
   .then((client) => {
     const db = client.db('board');
+    const { ObjectId } = require('mongodb');
 
     app.use(express.static('public'));
 
@@ -46,23 +47,32 @@ MongoClient.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true
       }
     });
 
-    app.put('/jobdetails', async (req, res) => {
-      const jobDetails = req.body;
+    app.put('/jobdetails/:id', async (req, res) => {
+      const { id } = req.params;
+      const updatedJob = req.body;
+    
       try {
-        await db.collection(COLLECTION_NAME).deleteMany({});
-        await db.collection(COLLECTION_NAME).insertMany(Object.values(jobDetails));
+        const result = await db.collection(COLLECTION_NAME).updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updatedJob }
+        );
+        
+        if (result.matchedCount === 0) {
+          return res.status(404).send('Job not found');
+        }
+        
         const updatedDetails = await db.collection(COLLECTION_NAME).find().toArray();
         res.json(updatedDetails);
       } catch (error) {
-        console.error('Error updating job details:', error);
+        console.error('Error updating job detail:', error);
         res.status(500).send('Internal Server Error');
       }
     });
 
-    app.delete('/jobdetails/:id', async (req, res) => {
+     app.delete('/jobdetails/:id', async (req, res) => {
       const { id } = req.params;
       try {
-        const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: ObjectId(id) });
+        const result = await db.collection('jobdetails').deleteOne({ _id: new ObjectId(id) });
         res.json(result);
       } catch (error) {
         console.error('Error deleting job detail:', error);

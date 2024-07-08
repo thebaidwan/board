@@ -204,7 +204,7 @@ const App = () => {
               </Heading>
             </Box>
             {view === 'calendar' ? (
-              <HStack spacing={0} ml="auto">
+              <HStack mr={-100}>
                 <Box width="30px" height="30px" display="flex" alignItems="center" justifyContent="center">
                   <FeatherIcon
                     icon="chevron-left"
