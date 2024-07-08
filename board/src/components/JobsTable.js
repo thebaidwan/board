@@ -1,10 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Table, Thead, Tbody, Tr, Th, Td, Button, Flex } from '@chakra-ui/react';
 import { Plus } from 'react-feather';
+import axios from 'axios';
 import JobForm from './JobForm';
 
 const JobsTable = () => {
   const [isJobFormOpen, setIsJobFormOpen] = useState(false);
+  const [jobs, setJobs] = useState([]);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/jobdetails');
+        setJobs(response.data);
+      } catch (error) {
+        console.error('Error fetching job details:', error);
+      }
+    };
+
+    fetchJobs();
+  }, []);
 
   const handleAddJob = () => {
     setIsJobFormOpen(true);
@@ -13,34 +28,6 @@ const JobsTable = () => {
   const handleCloseJobForm = () => {
     setIsJobFormOpen(false);
   };
-
-  const jobs = [
-    {
-      id: 1,
-      jobNumber: 'JN001',
-      client: 'Client A',
-      facility: 'Facility X',
-      jobValue: '$1000',
-      pieces: 10,
-      date: '2024-07-04',
-      color: 'Red',
-      testFit: 'Yes',
-      rush: 'No'
-    },
-    {
-      id: 2,
-      jobNumber: 'JN002',
-      client: 'Client B',
-      facility: 'Facility Y',
-      jobValue: '$2000',
-      pieces: 20,
-      date: '2024-07-05',
-      color: 'Blue',
-      testFit: 'No',
-      rush: 'Yes'
-    },
-    // Add more jobs here...
-  ];
 
   return (
     <Box w="80%" m="auto" mt="5">
@@ -82,16 +69,16 @@ const JobsTable = () => {
         </Thead>
         <Tbody>
           {jobs.map((job) => (
-            <Tr key={job.id}>
-              <Td border="1px solid" borderColor="gray.200">{job.jobNumber}</Td>
-              <Td border="1px solid" borderColor="gray.200">{job.client}</Td>
-              <Td border="1px solid" borderColor="gray.200">{job.facility}</Td>
-              <Td border="1px solid" borderColor="gray.200">{job.jobValue}</Td>
-              <Td border="1px solid" borderColor="gray.200">{job.pieces}</Td>
-              <Td border="1px solid" borderColor="gray.200">{job.date}</Td>
-              <Td border="1px solid" borderColor="gray.200">{job.color}</Td>
-              <Td border="1px solid" borderColor="gray.200">{job.testFit}</Td>
-              <Td border="1px solid" borderColor="gray.200">{job.rush}</Td>
+            <Tr key={job._id}>
+              <Td border="1px solid" borderColor="gray.200">{job.JobNumber}</Td>
+              <Td border="1px solid" borderColor="gray.200">{job.Client}</Td>
+              <Td border="1px solid" borderColor="gray.200">{job.Facility}</Td>
+              <Td border="1px solid" borderColor="gray.200">${job.JobValue}</Td>
+              <Td border="1px solid" borderColor="gray.200">{job.Pieces}</Td>
+              <Td border="1px solid" borderColor="gray.200">{new Date(job.RequiredByDate).toLocaleDateString()}</Td>
+              <Td border="1px solid" borderColor="gray.200">{job.Color}</Td>
+              <Td border="1px solid" borderColor="gray.200">{job.TestFit}</Td>
+              <Td border="1px solid" borderColor="gray.200">{job.Rush}</Td>
             </Tr>
           ))}
         </Tbody>

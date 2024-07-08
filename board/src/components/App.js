@@ -111,7 +111,7 @@ const App = () => {
               }
             }}
             mb={25}
-            height="30px"
+            height="38px"
             width="240px"
             borderColor="lightgrey"
             borderWidth="2px"

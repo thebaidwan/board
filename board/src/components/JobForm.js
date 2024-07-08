@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -7,8 +7,6 @@ import {
   FormLabel,
   Input,
   Select,
-  Radio,
-  RadioGroup,
   Stack,
   Modal,
   ModalOverlay,
@@ -16,20 +14,64 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  IconButton,
 } from '@chakra-ui/react';
 import { X } from 'react-feather';
+import axios from 'axios';
 
-const JobForm = ({ isOpen, onClose }) => {
+const JobForm = ({ isOpen, onClose, fetchJobs }) => {
+  const [jobNumber, setJobNumber] = useState('');
+  const [client, setClient] = useState('');
+  const [facility, setFacility] = useState('');
+  const [jobValue, setJobValue] = useState('');
+  const [pieces, setPieces] = useState('');
+  const [requiredByDate, setRequiredByDate] = useState('');
+  const [color, setColor] = useState('');
+  const [testFit, setTestFit] = useState(false);
+  const [rush, setRush] = useState(false);
 
-  const [isChecked, setIsChecked] = useState(true);
+  useEffect(() => {
+    if (!isOpen) {
+      resetForm();
+    }
+  }, [isOpen]);
 
-  const handleSave = () => {
-    // Handle form submission logic here
+  const handleSave = async () => {
+    if (!jobNumber) {
+      alert('Job Number is mandatory');
+      return;
+    }
+
+    const newJob = {
+      JobNumber: jobNumber,
+      Client: client,
+      Facility: facility,
+      JobValue: parseFloat(jobValue),
+      Pieces: parseInt(pieces),
+      RequiredByDate: requiredByDate ? new Date(requiredByDate).toISOString() : null,
+      Color: color,
+      TestFit: testFit ? 'yes' : 'no',
+      Rush: rush ? 'yes' : 'no',
+    };
+
+    try {
+      await axios.post('http://localhost:5000/jobdetails', newJob);
+      fetchJobs();
+      onClose();
+    } catch (error) {
+      console.error('Error saving job:', error);
+    }
   };
 
-  const handleToggle = () => {
-    setIsChecked(!isChecked);
+  const resetForm = () => {
+    setJobNumber('');
+    setClient('');
+    setFacility('');
+    setJobValue('');
+    setPieces('');
+    setRequiredByDate('');
+    setColor('');
+    setTestFit(false);
+    setRush(false);
   };
 
   return (
@@ -48,43 +90,35 @@ const JobForm = ({ isOpen, onClose }) => {
       >
         <ModalHeader display="flex" alignItems="center" justifyContent="center" pb="20px" position="relative">
           <Box fontWeight="600" fontSize="20px">Add Job</Box>
+          <Box position="absolute" top="12px" right="12px">
+            <Box
+              as={X}
+              size={24}
+              color="black"
+              onClick={onClose}
+              cursor="pointer"
+              aria-label="Close"
+              _hover={{ opacity: 0.7 }}
+              transition="opacity 0.3s"
+            />
+          </Box>
         </ModalHeader>
-        <Box position="absolute" top="12px" right="12px">
-          <Box
-            as={X}
-            size={24}
-            color="black"
-            onClick={onClose}
-            cursor="pointer"
-            aria-label="Close"
-            _hover={{ opacity: 0.7 }}
-            transition="opacity 0.3s"
-          />
-        </Box>
 
         <ModalBody>
           <Stack spacing="18px">
-            <FormControl display="flex" alignItems="center">
+            <FormControl display="flex" alignItems="center" isRequired>
               <FormLabel flex="0 0 120px" fontSize="16px">Job Number</FormLabel>
-              <Input type="text" placeholder="Enter job number" onFocus={(e) => e.target.placeholder = ""} onBlur={(e) => e.target.placeholder = "Enter job number"} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
+              <Input type="text" placeholder="Enter job number" value={jobNumber} onChange={(e) => setJobNumber(e.target.value)} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Client</FormLabel>
-              <Input type="text" placeholder="Enter client name" onFocus={(e) => e.target.placeholder = ""} onBlur={(e) => e.target.placeholder = "Enter client name"} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
+              <Input type="text" placeholder="Enter client name" value={client} onChange={(e) => setClient(e.target.value)} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Facility</FormLabel>
-              <Select
-                placeholder="Select facility"
-                fontSize="16px"
-                flex="1"
-                icon={<Box boxSize="0px" />}
-                style={{ appearance: 'textfield' }}
-                borderColor="grey"
-                _hover={{ borderColor: 'grey' }}
-              >
+              <Select placeholder="Select facility" value={facility} onChange={(e) => setFacility(e.target.value)} fontSize="16px" flex="1" icon={<Box boxSize="0px" />} style={{ appearance: 'textfield' }} borderColor="grey" _hover={{ borderColor: 'grey' }}>
                 <option value="Aluminum">Aluminum</option>
                 <option value="Steel">Steel</option>
                 <option value="Vinyl">Vinyl</option>
@@ -93,35 +127,33 @@ const JobForm = ({ isOpen, onClose }) => {
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Job Value</FormLabel>
-              <Input type="text" placeholder="Enter job value" onFocus={(e) => e.target.placeholder = ""} onBlur={(e) => e.target.placeholder = "Enter job value"} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
+              <Input type="text" placeholder="Enter job value" value={jobValue} onChange={(e) => setJobValue(e.target.value)} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Pieces</FormLabel>
-              <Input type="text" placeholder="Enter total job pieces" onFocus={(e) => e.target.placeholder = ""} onBlur={(e) => e.target.placeholder = "Enter total job pieces"} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
+              <Input type="text" placeholder="Enter total job pieces" value={pieces} onChange={(e) => setPieces(e.target.value)} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Date</FormLabel>
-              <Input type="date" fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
+              <Input type="date" value={requiredByDate} onChange={(e) => setRequiredByDate(e.target.value)} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Color</FormLabel>
-              <Input type="text" placeholder="Enter job color" onFocus={(e) => e.target.placeholder = ""} onBlur={(e) => e.target.placeholder = "Enter job color"} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
+              <Input type="text" placeholder="Enter job color" value={color} onChange={(e) => setColor(e.target.value)} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
-              <FormLabel flex="0 0 120px" fontSize="16px" mb="0">
-                Test Fit
-              </FormLabel>
+              <FormLabel flex="0 0 120px" fontSize="16px" mb="0">Test Fit</FormLabel>
               <Box flex="1" textAlign="left">
                 <Switch
-                  isChecked={isChecked}
-                  onChange={handleToggle}
+                  isChecked={testFit}
+                  onChange={(e) => setTestFit(e.target.checked)}
                   css={{
                     '.chakra-switch__track': {
-                      backgroundColor: isChecked ? '#ED7D31' : 'grey',
+                      backgroundColor: testFit ? '#ED7D31' : 'grey',
                     },
                     '.chakra-switch__thumb': {
                       backgroundColor: 'white',
@@ -132,13 +164,21 @@ const JobForm = ({ isOpen, onClose }) => {
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
-              <FormLabel flex="0 0 120px" fontSize="16px">Rush</FormLabel>
-              <RadioGroup defaultValue="yes" fontSize="16px" flex="1" colorScheme="orange">
-                <Stack direction="row">
-                  <Radio value="yes" size="lg">Yes</Radio>
-                  <Radio value="no" size="lg">No</Radio>
-                </Stack>
-              </RadioGroup>
+              <FormLabel flex="0 0 120px" fontSize="16px" mb="0">Rush</FormLabel>
+              <Box flex="1" textAlign="left">
+                <Switch
+                  isChecked={rush}
+                  onChange={(e) => setRush(e.target.checked)}
+                  css={{
+                    '.chakra-switch__track': {
+                      backgroundColor: rush ? '#ED7D31' : 'grey',
+                    },
+                    '.chakra-switch__thumb': {
+                      backgroundColor: 'white',
+                    },
+                  }}
+                />
+              </Box>
             </FormControl>
           </Stack>
         </ModalBody>
