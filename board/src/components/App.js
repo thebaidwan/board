@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
-import { ChakraProvider, Flex, Box, Text, IconButton, HStack, Heading, Input, Button, Tooltip } from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
+import { ChakraProvider, Flex, Box, Text, IconButton, HStack, Heading, Input, Button, Tooltip, Grid } from '@chakra-ui/react';
 import * as feather from 'feather-icons';
 import CalendarView from './CalendarView';
 import JobsTable from './JobsTable';
+import { AnimatePresence, motion } from 'framer-motion';
+
+const MotionGrid = motion(Grid);
 
 const FeatherIcon = ({ icon, size = 24, color = 'gray.500', onClick, tooltipText }) => {
   const iconSvg = feather.icons[icon].toSvg({ width: size, height: size });
@@ -28,10 +31,16 @@ const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [editableWeek, setEditableWeek] = useState(false);
+  const [weekNumber, setWeekNumber] = useState(getWeekNumber(currentDate));
   const [view, setView] = useState('calendar');
-  const [editableYear, setEditableYear] = useState(false);
-  const [editableMonth, setEditableMonth] = useState(false);
   const [error, setError] = useState('');
+  const [navigationDirection, setNavigationDirection] = useState('current');
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    setWeekNumber(getWeekNumber(currentDate));
+  }, [currentDate]);
 
   const handlePasswordChange = (event) => {
     setPassword(event.target.value);
@@ -45,54 +54,58 @@ const App = () => {
     }
   };
 
-  const toggleEditableYear = () => {
-    setEditableYear(!editableYear);
+  const handlePrevWeek = () => {
+    setNavigationDirection('prev');
+    setIsAnimating(true);
   };
 
-  const toggleEditableMonth = () => {
-    setEditableMonth(!editableMonth);
+  const handleNextWeek = () => {
+    setNavigationDirection('next');
+    setIsAnimating(true);
   };
 
-  const handleYearChange = (event) => {
-    const year = parseInt(event.target.value);
-    if (!isNaN(year)) {
-      setCurrentDate(new Date(year, currentDate.getMonth(), 1));
-    }
-  };
-
-  const handleMonthChange = (event) => {
-    const monthIndex = parseInt(event.target.value);
-    if (!isNaN(monthIndex)) {
-      setCurrentDate(new Date(currentDate.getFullYear(), monthIndex - 1, 1));
-    }
-  };
-
-  const handlePrevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-  };
-
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  const handleCurrentWeek = () => {
+    setNavigationDirection('current');
+    setIsAnimating(true);
   };
 
   const handleViewChange = () => {
     setView(view === 'calendar' ? 'jobsTable' : 'calendar');
   };
 
-  const months = [
-    { value: 1, label: 'January' },
-    { value: 2, label: 'February' },
-    { value: 3, label: 'March' },
-    { value: 4, label: 'April' },
-    { value: 5, label: 'May' },
-    { value: 6, label: 'June' },
-    { value: 7, label: 'July' },
-    { value: 8, label: 'August' },
-    { value: 9, label: 'September' },
-    { value: 10, label: 'October' },
-    { value: 11, label: 'November' },
-    { value: 12, label: 'December' },
-  ];
+  const handleWeekChange = (e) => {
+    setWeekNumber(parseInt(e.target.value));
+  };
+
+  const toggleEditableWeek = () => {
+    setEditableWeek(!editableWeek);
+  };
+
+  const handleBlur = () => {
+    setEditableWeek(false);
+    setCurrentDate(getDateFromWeekNumber(weekNumber, currentDate.getFullYear()));
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+    }
+  };
+
+  function getWeekNumber(date) {
+    date = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+    var yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    var weekNumber = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+    return weekNumber;
+  }
+
+  function getDateFromWeekNumber(week, year) {
+    var janFirst = new Date(year, 0, 1);
+    var daysOffset = 1 - janFirst.getDay();
+    var weekStart = new Date(year, 0, janFirst.getDate() + daysOffset + (week - 1) * 7);
+    return weekStart;
+  }
 
   if (!isAuthenticated) {
     return (
@@ -159,45 +172,29 @@ const App = () => {
       <Flex direction="column" align="left" justify="center" minH="100vh">
         <Box w="100%" bg="white" p={2} mb={8} boxShadow="none">
           <Flex justifyContent="space-between" alignItems="left" w="95%">
-            <Box flex="1" ml={view === 'calendar' ? '1' : '192'}>
+            <Box flex="1" ml={view === 'calendar' ? '1' : '192'} mt={view === 'calendar' ? '1' : '5'}>
               <Heading as="h1" color="#ED7D31" fontWeight="500" textAlign="left">
                 {view === 'calendar' ? (
-                  <Text as="span" display="flex" alignItems="center" justifyContent="flex-start">
-                    {editableMonth ? (
-                      <select
-                        name="month"
-                        value={currentDate.getMonth() + 1}
-                        onChange={handleMonthChange}
-                        onBlur={toggleEditableMonth}
-                        autoFocus
-                        style={{ width: 'auto', appearance: 'textfield', border: 'none', outline: 'none', marginRight: '0.5rem' }}
-                      >
-                        {months.map((month) => (
-                          <option key={month.value} value={month.value}>
-                            {month.label}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <Text as="span" onClick={toggleEditableMonth} style={{ cursor: 'pointer', marginRight: '0.5rem' }}>
-                        {currentDate.toLocaleString('default', { month: 'long' })}
-                      </Text>
-                    )}
-                    {editableYear ? (
+                  <Flex align="center">
+                    <Text>
+                      {currentDate.getFullYear()} | Week&nbsp;
+                    </Text>
+                    {editableWeek ? (
                       <Input
                         type="number"
-                        value={currentDate.getFullYear()}
-                        onChange={handleYearChange}
-                        onBlur={toggleEditableYear}
+                        value={weekNumber}
+                        onChange={handleWeekChange}
+                        onBlur={handleBlur}
+                        onKeyDown={handleKeyPress}
                         autoFocus
-                        style={{ appearance: 'textfield', border: 'none', outline: 'none', width: '4rem' }}
+                        style={{ width: 'auto', appearance: 'textfield', border: 'none', outline: 'none', marginRight: '0.5rem' }}
                       />
                     ) : (
-                      <Text as="span" onClick={toggleEditableYear} style={{ cursor: 'pointer' }}>
-                        {currentDate.getFullYear()}
+                      <Text onClick={toggleEditableWeek} style={{ cursor: 'pointer', marginRight: '0.5rem' }}>
+                        {weekNumber}
                       </Text>
                     )}
-                  </Text>
+                  </Flex>
                 ) : (
                   'Jobs List'
                 )}
@@ -210,8 +207,8 @@ const App = () => {
                     icon="chevron-left"
                     size={24}
                     color="gray.500"
-                    onClick={handlePrevMonth}
-                    tooltipText="Previous Month"
+                    onClick={handlePrevWeek}
+                    tooltipText="Previous Week"
                   />
                 </Box>
                 <Box width="30px" height="30px" display="flex" alignItems="center" justifyContent="center">
@@ -219,8 +216,17 @@ const App = () => {
                     icon="chevron-right"
                     size={24}
                     color="gray.500"
-                    onClick={handleNextMonth}
-                    tooltipText="Next Month"
+                    onClick={handleNextWeek}
+                    tooltipText="Next Week"
+                  />
+                </Box>
+                <Box width="30px" height="30px" display="flex" alignItems="center" justifyContent="center">
+                  <FeatherIcon
+                    icon="calendar"
+                    size={24}
+                    color="gray.500"
+                    onClick={handleCurrentWeek}
+                    tooltipText="Current Week"
                   />
                 </Box>
                 <Box width="30px" height="30px" display="flex" alignItems="center" justifyContent="center">
@@ -247,7 +253,7 @@ const App = () => {
           </Flex>
         </Box>
         {view === 'calendar' ? (
-          <CalendarView currentDate={currentDate} />
+          <CalendarView currentDate={currentDate} setCurrentDate={setCurrentDate} weekNumber={weekNumber} handlePrevWeek={handlePrevWeek} handleNextWeek={handleNextWeek} handleCurrentWeek={handleCurrentWeek} navigationDirection={navigationDirection} isAnimating={isAnimating} setIsAnimating={setIsAnimating} />
         ) : (
           <JobsTable />
         )}

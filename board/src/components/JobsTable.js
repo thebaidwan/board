@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Table, Thead, Tbody, Tr, Th, Td, Button, Flex, Checkbox, IconButton, Input, Select, Spinner } from '@chakra-ui/react';
-import { Plus, Trash2, Edit, X, Save } from 'react-feather';
+import { Box, Table, Thead, Tbody, Tr, Th, Td, Button, Flex, Checkbox, IconButton, Input, Select, Spinner, Tooltip } from '@chakra-ui/react';
+import { Plus, Trash2, Edit, X, Save, RefreshCw } from 'react-feather';
 import axios from 'axios';
 import JobForm from './JobForm';
 
@@ -101,6 +101,21 @@ const JobsTable = () => {
   return (
     <Box w="80%" m="auto" mt="5">
       <Flex mb="5" justifyContent="flex-end">
+        <Tooltip label="Refresh Table" aria-label="Refresh Table">
+          <Box
+            width="30px"
+            height="30px"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            cursor="pointer"
+            onClick={fetchJobs}
+            mr={3}
+            mt={1}
+          >
+            <RefreshCw size={24}/>
+          </Box>
+        </Tooltip>
         <Button
           leftIcon={<Box as={Plus} size="18px" color="#CC5500" />}
           onClick={handleAddJob}
