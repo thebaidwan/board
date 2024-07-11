@@ -79,6 +79,28 @@ MongoClient.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true
       }
     });
 
+    app.put('/jobdetails/:jobNumber/remove-from-schedule', async (req, res) => {
+      const { jobNumber } = req.params;
+      const { date } = req.body;
+
+      try {
+        const result = await db.collection(COLLECTION_NAME).updateOne(
+          { JobNumber: jobNumber },
+          { $pull: { Schedule: date } }
+        );
+
+        if (result.matchedCount === 0) {
+          return res.status(404).send('Job not found');
+        }
+
+        const updatedJob = await db.collection(COLLECTION_NAME).findOne({ JobNumber: jobNumber });
+        res.json(updatedJob);
+      } catch (error) {
+        console.error('Error removing date from schedule:', error);
+        res.status(500).send('Internal Server Error');
+      }
+    });
+
     app.delete('/jobdetails/:id', async (req, res) => {
       const { id } = req.params;
       try {

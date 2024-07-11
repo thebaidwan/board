@@ -10,7 +10,7 @@ const MotionGrid = motion(Grid);
 const FeatherIcon = ({ icon, size = 24, color = 'gray.500', onClick, tooltipText }) => {
   const iconSvg = feather.icons[icon].toSvg({ width: size, height: size });
   return (
-    <Tooltip label={tooltipText} placement="bottom" gutter={-50}>
+    <Tooltip label={tooltipText} placement="bottom" gutter={-60}>
       <Box
         as="span"
         onClick={onClick}

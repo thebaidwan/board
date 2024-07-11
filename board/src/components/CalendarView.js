@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box, Grid, Text, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody,
-  Table, Thead, Tbody, Tr, Th, Td
+  Table, Thead, Tbody, Tr, Th, Td, Flex, Tooltip
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
@@ -23,6 +23,17 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
       try {
         const res = await axios.get('http://localhost:5000/jobdetails');
         setJobs(res.data);
+
+        const initialSelectedJobs = {};
+        res.data.forEach(job => {
+          job.Schedule.forEach(date => {
+            if (!initialSelectedJobs[date]) {
+              initialSelectedJobs[date] = [];
+            }
+            initialSelectedJobs[date].push(job);
+          });
+        });
+        setSelectedJobs(initialSelectedJobs);
       } catch (error) {
         console.error('Error fetching jobs:', error);
         setJobs([]);
@@ -55,6 +66,26 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
     dayDate.setDate(startOfWeek.getDate() + i);
     const isWeekend = dayDate.getDay() === 0 || dayDate.getDay() === 6;
     const isToday = dayDate.toDateString() === new Date().toDateString();
+
+    const facilityColor = (facility) => {
+      switch (facility) {
+        case 'Aluminum':
+          return { color: 'blue.500', label: 'Aluminum' };
+        case 'Steel':
+          return { color: 'red.500', label: 'Steel' };
+        case 'Vinyl':
+          return { color: 'green.500', label: 'Vinyl' };
+        default:
+          return { color: 'gray.500', label: 'Unknown' };
+      }
+    };
+
+    const jobsForDay = selectedJobs[dayDate.toDateString()] || [];
+    const totalJobValue = jobsForDay.reduce((sum, job) => {
+      const numDates = job.Schedule.length;
+      return sum + (job.JobValue / numDates);
+    }, 0);
+
     days.push(
       <MotionBox
         key={i}
@@ -73,18 +104,52 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
         border={isToday ? '1px solid #ED7D31' : '1px solid gray'}
         textAlign="left"
         paddingTop={0}
+        position="relative"
       >
-        <Text fontSize='20px' fontWeight={isToday ? '500' : 'normal'} color={isToday ? '#ED7D31' : (isWeekend ? 'gray.400' : 'inherit')}>
+        <Text fontSize='22px' fontWeight={isToday ? '500' : 'normal'} color={isToday ? '#ED7D31' : (isWeekend ? 'gray.400' : 'inherit')}>
           {dayDate.toLocaleString('default', { month: 'short' })} {dayDate.getDate()}
         </Text>
-        {selectedJobs[dayDate.toDateString()] && (
+        <Text
+          position="absolute"
+          top="2px"
+          right="2px"
+          fontSize="14px"
+          fontWeight="500"
+          color={totalJobValue === 0 ? "transparent" : totalJobValue < 15000 ? "red.500" : "green.500"}
+        >
+          ${totalJobValue.toFixed(2)}
+        </Text>
+        {jobsForDay.length > 0 && (
           <Box mt={2}>
-            <Text fontWeight="bold">Scheduled Jobs:</Text>
-            <ul>
-              {selectedJobs[dayDate.toDateString()].map(job => (
-                <li key={job.JobNumber}>{job.JobNumber}</li>
-              ))}
-            </ul>
+            {jobsForDay.map(job => (
+              <Box key={job.JobNumber} border="1px solid #ED7D31" borderRadius="md" p={2} mb={2} bg="#FFF5E5">
+                <Flex justifyContent="space-between" alignItems="center">
+                  <Box display="flex" alignItems="center">
+                    <Text fontWeight="bold" fontSize="14px">{job.JobNumber}</Text>
+                    <Tooltip label={facilityColor(job.Facility).label} fontSize="md">
+                      <Box w="8px" h="8px" borderRadius="full" bg={facilityColor(job.Facility).color} ml={1}></Box>
+                    </Tooltip>
+                    {job.TestFit === 'yes' && (
+                      <Tooltip label="Requires Test Fit" fontSize="md">
+                        <Box w="8px" h="8px" borderRadius="full" bg='purple.500' ml={1}></Box>
+                      </Tooltip>
+                    )}
+                    {job.Rush === 'yes' && (
+                      <Tooltip label="Rush" fontSize="md">
+                        <Box w="8px" h="8px" borderRadius="full" bg='pink.500' ml={1}></Box>
+                      </Tooltip>
+                    )}
+                  </Box>
+                  <Text fontSize="14px">${job.JobValue}</Text>
+                </Flex>
+                <Text fontSize="14px">{job.Client}</Text>
+                <Text fontSize="14px">{job.Color}</Text>
+                <Flex justifyContent="space-between" alignItems="center">
+                  <Text fontSize="14px">Pieces: {job.Pieces}</Text>
+                  <Text fontSize="14px">Due: {new Date(job.RequiredByDate).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}</Text>
+                </Flex>
+              </Box>
+            ))}
           </Box>
         )}
         <Button mt={2} onClick={() => handleOpenModal(dayDate)}>Add Jobs</Button>
@@ -120,9 +185,21 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
         ...selectedJobs,
         [selectedDateString]: checkedJobs.map(jobNumber => jobs.find(job => job.JobNumber === jobNumber))
       };
-  
+
       setSelectedJobs(updatedSelectedJobs);
-  
+
+      for (let job of jobs) {
+        if (job.Schedule.includes(selectedDateString) && !checkedJobs.includes(job.JobNumber)) {
+          try {
+            await axios.put(`http://localhost:5000/jobdetails/${job.JobNumber}/remove-from-schedule`, {
+              date: selectedDateString
+            });
+          } catch (error) {
+            console.error(`Error updating schedule for job ${job.JobNumber}:`, error);
+          }
+        }
+      }
+
       for (let jobNumber of checkedJobs) {
         try {
           await axios.put(`http://localhost:5000/jobdetails/${jobNumber}/add-to-schedule`, {
@@ -132,10 +209,10 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
           console.error(`Error updating schedule for job ${jobNumber}:`, error);
         }
       }
-  
+
       setIsModalOpen(false);
     }
-  };  
+  };
 
   return (
     <motion.div
@@ -179,14 +256,14 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
                 cursor="pointer"
                 aria-label="Close"
                 _hover={{ opacity: 0.7 }}
-                transition="opacity 0.3s"
+                transition="opacity 0.3s ease"
               >
                 &times;
               </Box>
             </Box>
           </ModalHeader>
 
-          <ModalBody>
+          <ModalBody maxHeight="70vh" overflowY="auto">
             <Table colorScheme="gray" size="sm">
               <Thead>
                 <Tr>
@@ -201,12 +278,12 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
               <Tbody>
                 {jobs.map(job => (
                   <Tr
-                  key={job.JobNumber}
-                  onClick={() => handleRowClick(job.JobNumber)}
-                  cursor="pointer"
-                  bg={checkedJobs.includes(job.JobNumber) ? 'orange.200' : 'transparent'}
-                  _hover={{ bg: checkedJobs.includes(job.JobNumber) ? 'orange.100' : 'gray.100' }}
-                  borderColor="gray.400" 
+                    key={job.JobNumber}
+                    onClick={() => handleRowClick(job.JobNumber)}
+                    bg={checkedJobs.includes(job.JobNumber) ? 'orange.100' : 'transparent'}
+                    color="gray.800"
+                    cursor="pointer"
+                    _hover={{ bg: 'orange.50' }}
                   >
                     <Td>{job.JobNumber}</Td>
                     <Td>{job.Client}</Td>
