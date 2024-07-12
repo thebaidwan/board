@@ -40,7 +40,13 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
 
   const handleSave = async () => {
     if (!jobNumber) {
-      alert('Job Number is mandatory');
+      toast({
+        title: "Error",
+        description: "Job Number is mandatory",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
       return;
     }
 

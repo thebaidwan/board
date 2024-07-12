@@ -8,7 +8,7 @@ import axios from 'axios';
 
 const MotionBox = motion(Box);
 
-const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirection, isAnimating, setIsAnimating }) => {
+const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, setIsAnimating }) => {
   const toast = useToast();
   const startOfWeek = new Date(currentDate);
   startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1);
@@ -18,7 +18,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [checkedJobs, setCheckedJobs] = useState([]);
-  const [totalJobValue, setTotalJobValue] = useState(0); // New state for total job value
+  const [totalJobValue, setTotalJobValue] = useState(0);
 
   const dayNames = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
@@ -57,13 +57,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
   useEffect(() => {
     if (isAnimating) {
       const timer = setTimeout(() => {
-        if (navigationDirection === 'next') {
-          setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)));
-        } else if (navigationDirection === 'prev') {
-          setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)));
-        } else if (navigationDirection === 'current') {
-          setCurrentDate(new Date());
-        }
+        setCurrentDate(new Date());
         setIsAnimating(false);
       }, 500);
 
@@ -81,7 +75,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
       }, 0);
       setTotalJobValue(totalValue);
     }
-  }, [checkedJobs, selectedDate, selectedJobs]); // Recalculate total job value when checkedJobs or selectedDate changes
+  }, [checkedJobs, selectedDate, selectedJobs]);
 
   const days = [];
   for (let i = 0; i < 7; i++) {

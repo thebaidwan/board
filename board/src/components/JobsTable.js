@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Table, Thead, Tbody, Tr, Th, Td, Button, Flex, Checkbox, IconButton, Input, Select, Spinner, Tooltip, useToast } from '@chakra-ui/react';
+import { Box, Table, Thead, Tbody, Tr, Th, Td, Button, Flex, Checkbox, IconButton, Input, Select, Spinner, Tooltip, useToast, ChakraProvider } from '@chakra-ui/react';
 import { Plus, Trash2, Edit, X, Save, RefreshCw } from 'react-feather';
 import axios from 'axios';
 import JobForm from './JobForm';
@@ -139,257 +139,271 @@ const JobsTable = () => {
   };
 
   const duplicateJobNumbers = jobs
-    .map((job) => job.JobNumber)
-    .filter((jobNumber, index, self) => self.indexOf(jobNumber) !== self.lastIndexOf(jobNumber));
-
+  .map((job) => job.JobNumber)
+  .filter((jobNumber, index, self) => {
+    const isDuplicate = self.indexOf(jobNumber) !== self.lastIndexOf(jobNumber);
+    if (isDuplicate) {
+      toast({
+        title: "Duplicate Job Number",
+        description: `The job number ${jobNumber} is already added.`,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+    return isDuplicate;
+  });
+ 
   return (
-    <Box w="80%" m="auto" mt="5">
-      <Flex mb="5" justifyContent="flex-end">
-        <Tooltip label="Refresh Table" aria-label="Refresh Table">
-          <Box
-            width="30px"
-            height="30px"
+    <ChakraProvider>
+      <Box w="80%" m="auto" mt="5">
+        <Flex mb="5" justifyContent="flex-end">
+          <Tooltip label="Refresh Table" aria-label="Refresh Table">
+            <Box
+              width="30px"
+              height="30px"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              cursor="pointer"
+              onClick={fetchJobs}
+              mr={3}
+              mt={1}
+            >
+              <RefreshCw size={24} />
+            </Box>
+          </Tooltip>
+          <Button
+            leftIcon={<Box as={Plus} size="18px" />}
+            onClick={handleAddJob}
+            variant="outline"
+            _hover={{ bg: "gray.200" }}
+            _active={{ bg: "gray.300" }}
+            borderRadius="4px"
+            fontSize="18px"
+            height="36px"
+            width="120px"
             display="flex"
-            alignItems="center"
             justifyContent="center"
-            cursor="pointer"
-            onClick={fetchJobs}
-            mr={3}
-            mt={1}
+            alignItems="center"
+            pr="12px"
+            pt="2px"
+            mr="2"
           >
-            <RefreshCw size={24} />
-          </Box>
-        </Tooltip>
-        <Button
-          leftIcon={<Box as={Plus} size="18px" />}
-          onClick={handleAddJob}
-          variant="outline"
-          _hover={{ bg: "gray.200" }}
-          _active={{ bg: "gray.300" }}
-          borderRadius="4px"
-          fontSize="18px"
-          height="36px"
-          width="120px"
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          pr="12px"
-          pt="2px"
-          mr="2"
-        >
-          Add Job
-        </Button>
-        <Button
-          leftIcon={<Box as={isEditing ? X : Edit} size="18px" />}
-          onClick={handleEditToggle}
-          variant="outline"
-          _hover={{ bg: "gray.200" }}
-          _active={{ bg: "gray.300" }}
-          borderRadius="4px"
-          fontSize="18px"
-          height="36px"
-          width="120px"
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          pr="12px"
-          pt="2px"
-        >
-          {isEditing ? 'Cancel' : 'Edit'}
-        </Button>
-        {isEditing && (
-          <>
-            {selectedJobs.length > 0 && (
-              <IconButton
-                icon={<Trash2 size="18px" />}
-                onClick={handleDeleteJobs}
+            Add Job
+          </Button>
+          <Button
+            leftIcon={<Box as={isEditing ? X : Edit} size="18px" />}
+            onClick={handleEditToggle}
+            variant="outline"
+            _hover={{ bg: "gray.200" }}
+            _active={{ bg: "gray.300" }}
+            borderRadius="4px"
+            fontSize="18px"
+            height="36px"
+            width="120px"
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            pr="12px"
+            pt="2px"
+          >
+            {isEditing ? 'Cancel' : 'Edit'}
+          </Button>
+          {isEditing && (
+            <>
+              {selectedJobs.length > 0 && (
+                <IconButton
+                  icon={<Trash2 size="18px" />}
+                  onClick={handleDeleteJobs}
+                  variant="outline"
+                  colorScheme="red"
+                  borderRadius="4px"
+                  fontSize="18px"
+                  height="36px"
+                  width="36px"
+                  display="flex"
+                  justifyContent="center"
+                  alignItems="center"
+                  ml="2"
+                />
+              )}
+              <Button
+                leftIcon={<Box as={Save} size="18px" />}
+                onClick={handleSaveEdits}
                 variant="outline"
-                colorScheme="red"
+                colorScheme="green"
                 borderRadius="4px"
                 fontSize="18px"
                 height="36px"
-                width="36px"
+                width="120px"
                 display="flex"
                 justifyContent="center"
                 alignItems="center"
                 ml="2"
-              />
-            )}
-            <Button
-              leftIcon={<Box as={Save} size="18px" />}
-              onClick={handleSaveEdits}
-              variant="outline"
-              colorScheme="green"
-              borderRadius="4px"
-              fontSize="18px"
-              height="36px"
-              width="120px"
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              ml="2"
-            >
-              Save
-            </Button>
-          </>
-        )}
-      </Flex>
-      {isFetching ? (
-        <Spinner
-          thickness="4px"
-          speed="0.65s"
-          color="blue.500"
-          size="xl"
-          alignSelf="center"
-        />
-      ) : (
-        <Table variant="striped" colorScheme="gray" size="sm" border="1px" borderColor="gray.200" borderRadius="md">
-          <Thead>
-            <Tr>
-              <Th>Job Number</Th>
-              <Th>Client</Th>
-              <Th>Facility</Th>
-              <Th>Job Value</Th>
-              <Th>Pieces</Th>
-              <Th>Required By</Th>
-              <Th>Color</Th>
-              <Th>Test Fit</Th>
-              <Th>Rush</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {jobs.map((job) => (
-              <Tr
-                key={job._id}
-                bg={duplicateJobNumbers.includes(job.JobNumber) ? 'red.100' : 'white'}
               >
-                <Td position="relative">
-                  {isEditing && (
-                    <Checkbox
-                      isChecked={selectedJobs.includes(job._id)}
-                      onChange={() => handleSelectJob(job._id)}
-                      position="absolute"
-                      top="50%"
-                      left="-5"
-                      transform="translate(-50%, -50%)"
-                    />
-                  )}
-                  {isEditing ? (
-                    <Input
-                      value={editingJobs[job._id]?.JobNumber || job.JobNumber}
-                      onChange={(e) => handleInputChange(job._id, 'JobNumber', e.target.value)}
-                      size="sm"
-                    />
-                  ) : (
-                    job.JobNumber
-                  )}
-                </Td>
-                <Td>
-                  {isEditing ? (
-                    <Input
-                      value={editingJobs[job._id]?.Client || job.Client}
-                      onChange={(e) => handleInputChange(job._id, 'Client', e.target.value)}
-                      size="sm"
-                    />
-                  ) : (
-                    job.Client
-                  )}
-                </Td>
-                <Td>
-                  {isEditing ? (
-                    <Select
-                      value={editingJobs[job._id]?.Facility || job.Facility}
-                      onChange={(e) => handleInputChange(job._id, 'Facility', e.target.value)}
-                      size="sm"
-                    >
-                      <option value="Aluminum">Aluminum</option>
-                      <option value="Steel">Steel</option>
-                      <option value="Vinyl">Vinyl</option>
-                    </Select>
-                  ) : (
-                    job.Facility
-                  )}
-                </Td>
-                <Td>
-                  {isEditing ? (
-                    <Input
-                      value={editingJobs[job._id]?.JobValue || job.JobValue}
-                      onChange={(e) => handleInputChange(job._id, 'JobValue', e.target.value)}
-                      size="sm"
-                    />
-                  ) : (
-                    job.JobValue
-                  )}
-                </Td>
-                <Td>
-                  {isEditing ? (
-                    <Input
-                      value={editingJobs[job._id]?.Pieces || job.Pieces}
-                      onChange={(e) => handleInputChange(job._id, 'Pieces', e.target.value)}
-                      size="sm"
-                    />
-                  ) : (
-                    job.Pieces
-                  )}
-                </Td>
-                <Td>
-                  {isEditing ? (
-                    <Input
-                      type="date"
-                      value={editingJobs[job._id]?.RequiredByDate || formatDateForInput(job.RequiredByDate)}
-                      onChange={(e) => handleInputChange(job._id, 'RequiredByDate', e.target.value)}
-                      size="sm"
-                    />
-                  ) : (
-                    new Date(job.RequiredByDate).toLocaleDateString('en-US', { dateStyle: 'long' })
-                  )}
-                </Td>
-                <Td>
-                  {isEditing ? (
-                    <Input
-                      value={editingJobs[job._id]?.Color || job.Color}
-                      onChange={(e) => handleInputChange(job._id, 'Color', e.target.value)}
-                      size="sm"
-                    />
-                  ) : (
-                    job.Color
-                  )}
-                </Td>
-                <Td>
-                  {isEditing ? (
-                    <Select
-                      value={editingJobs[job._id]?.TestFit || job.TestFit}
-                      onChange={(e) => handleInputChange(job._id, 'TestFit', e.target.value)}
-                      size="sm"
-                    >
-                      <option value="yes">yes</option>
-                      <option value="no">no</option>
-                    </Select>
-                  ) : (
-                    job.TestFit
-                  )}
-                </Td>
-                <Td>
-                  {isEditing ? (
-                    <Select
-                      value={editingJobs[job._id]?.Rush || job.Rush}
-                      onChange={(e) => handleInputChange(job._id, 'Rush', e.target.value)}
-                      size="sm"
-                    >
-                      <option value="yes">yes</option>
-                      <option value="no">no</option>
-                    </Select>
-                  ) : (
-                    job.Rush
-                  )}
-                </Td>
+                Save
+              </Button>
+            </>
+          )}
+        </Flex>
+        {isFetching ? (
+          <Spinner
+            thickness="4px"
+            speed="0.65s"
+            color="blue.500"
+            size="xl"
+            alignSelf="center"
+          />
+        ) : (
+          <Table variant="striped" colorScheme="gray" size="sm" border="1px" borderColor="gray.200" borderRadius="md">
+            <Thead>
+              <Tr>
+                <Th>Job Number</Th>
+                <Th>Client</Th>
+                <Th>Facility</Th>
+                <Th>Job Value</Th>
+                <Th>Pieces</Th>
+                <Th>Required By</Th>
+                <Th>Color</Th>
+                <Th>Test Fit</Th>
+                <Th>Rush</Th>
               </Tr>
-            ))}
-          </Tbody>
-        </Table>
-      )}
-      <JobForm isOpen={isJobFormOpen} onClose={handleCloseJobForm} />
-    </Box>
+            </Thead>
+            <Tbody>
+              {jobs.map((job) => (
+                <Tr
+                  key={job._id}
+                  bg={duplicateJobNumbers.includes(job.JobNumber) ? 'red.100' : 'white'}
+                >
+                  <Td position="relative">
+                    {isEditing && (
+                      <Checkbox
+                        isChecked={selectedJobs.includes(job._id)}
+                        onChange={() => handleSelectJob(job._id)}
+                        position="absolute"
+                        top="50%"
+                        left="-5"
+                        transform="translate(-50%, -50%)"
+                      />
+                    )}
+                    {isEditing ? (
+                      <Input
+                        value={editingJobs[job._id]?.JobNumber || job.JobNumber}
+                        onChange={(e) => handleInputChange(job._id, 'JobNumber', e.target.value)}
+                        size="sm"
+                      />
+                    ) : (
+                      job.JobNumber
+                    )}
+                  </Td>
+                  <Td>
+                    {isEditing ? (
+                      <Input
+                        value={editingJobs[job._id]?.Client || job.Client}
+                        onChange={(e) => handleInputChange(job._id, 'Client', e.target.value)}
+                        size="sm"
+                      />
+                    ) : (
+                      job.Client
+                    )}
+                  </Td>
+                  <Td>
+                    {isEditing ? (
+                      <Select
+                        value={editingJobs[job._id]?.Facility || job.Facility}
+                        onChange={(e) => handleInputChange(job._id, 'Facility', e.target.value)}
+                        size="sm"
+                      >
+                        <option value="Aluminum">Aluminum</option>
+                        <option value="Steel">Steel</option>
+                        <option value="Vinyl">Vinyl</option>
+                      </Select>
+                    ) : (
+                      job.Facility
+                    )}
+                  </Td>
+                  <Td>
+                    {isEditing ? (
+                      <Input
+                        value={editingJobs[job._id]?.JobValue || job.JobValue}
+                        onChange={(e) => handleInputChange(job._id, 'JobValue', e.target.value)}
+                        size="sm"
+                      />
+                    ) : (
+                      job.JobValue
+                    )}
+                  </Td>
+                  <Td>
+                    {isEditing ? (
+                      <Input
+                        value={editingJobs[job._id]?.Pieces || job.Pieces}
+                        onChange={(e) => handleInputChange(job._id, 'Pieces', e.target.value)}
+                        size="sm"
+                      />
+                    ) : (
+                      job.Pieces
+                    )}
+                  </Td>
+                  <Td>
+                    {isEditing ? (
+                      <Input
+                        type="date"
+                        value={editingJobs[job._id]?.RequiredByDate || formatDateForInput(job.RequiredByDate)}
+                        onChange={(e) => handleInputChange(job._id, 'RequiredByDate', e.target.value)}
+                        size="sm"
+                      />
+                    ) : (
+                      new Date(job.RequiredByDate).toLocaleDateString('en-US', { dateStyle: 'long' })
+                    )}
+                  </Td>
+                  <Td>
+                    {isEditing ? (
+                      <Input
+                        value={editingJobs[job._id]?.Color || job.Color}
+                        onChange={(e) => handleInputChange(job._id, 'Color', e.target.value)}
+                        size="sm"
+                      />
+                    ) : (
+                      job.Color
+                    )}
+                  </Td>
+                  <Td>
+                    {isEditing ? (
+                      <Select
+                        value={editingJobs[job._id]?.TestFit || job.TestFit}
+                        onChange={(e) => handleInputChange(job._id, 'TestFit', e.target.value)}
+                        size="sm"
+                      >
+                        <option value="yes">yes</option>
+                        <option value="no">no</option>
+                      </Select>
+                    ) : (
+                      job.TestFit
+                    )}
+                  </Td>
+                  <Td>
+                    {isEditing ? (
+                      <Select
+                        value={editingJobs[job._id]?.Rush || job.Rush}
+                        onChange={(e) => handleInputChange(job._id, 'Rush', e.target.value)}
+                        size="sm"
+                      >
+                        <option value="yes">yes</option>
+                        <option value="no">no</option>
+                      </Select>
+                    ) : (
+                      job.Rush
+                    )}
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        )}
+        <JobForm isOpen={isJobFormOpen} onClose={handleCloseJobForm} />
+      </Box>
+    </ChakraProvider>
   );
 };
 

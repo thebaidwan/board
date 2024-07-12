@@ -35,7 +35,6 @@ const App = () => {
   const [weekNumber, setWeekNumber] = useState(getWeekNumber(currentDate));
   const [view, setView] = useState('calendar');
   const [error, setError] = useState('');
-  const [navigationDirection, setNavigationDirection] = useState('current');
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
 
@@ -56,9 +55,8 @@ const App = () => {
   };
 
   const handlePrevWeek = () => {
-    setNavigationDirection('prev');
     setIsAnimating(true);
-    setAnimationKey(prevKey => prevKey + 1); // Update animation key
+    setAnimationKey(prevKey => prevKey + 1);
     setCurrentDate(prevDate => {
       const newDate = new Date(prevDate.getTime());
       newDate.setDate(newDate.getDate() - 7);
@@ -68,9 +66,8 @@ const App = () => {
   };
 
   const handleNextWeek = () => {
-    setNavigationDirection('next');
     setIsAnimating(true);
-    setAnimationKey(prevKey => prevKey + 1); // Update animation key
+    setAnimationKey(prevKey => prevKey + 1);
     setCurrentDate(prevDate => {
       const newDate = new Date(prevDate.getTime());
       newDate.setDate(newDate.getDate() + 7);
@@ -80,9 +77,8 @@ const App = () => {
   };
 
   const handleCurrentWeek = () => {
-    setNavigationDirection('current');
     setIsAnimating(true);
-    setAnimationKey(prevKey => prevKey + 1); // Update animation key
+    setAnimationKey(prevKey => prevKey + 1);
     setCurrentDate(new Date());
     setTimeout(() => setIsAnimating(false), 300);
   };
@@ -134,49 +130,26 @@ const App = () => {
             placeholder="Enter password"
             value={password}
             onChange={handlePasswordChange}
-            onFocus={(e) => e.target.placeholder = ''}
-            onBlur={(e) => e.target.placeholder = 'Enter password'}
+            mb={6}
+            size="lg"
+            maxW="400px"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 handleLogin();
               }
             }}
-            mb={25}
-            height="38px"
-            width="240px"
-            borderColor="lightgrey"
-            borderWidth="2px"
-            borderRadius="4px"
-            _focus={{ placeholder: '' }}
-            _active={{ placeholder: '' }}
-            _placeholder={{ color: "grey" }}
-            textAlign="center"
-            fontSize="18px"
-            style={{
-              border: '2px solid grey',
-            }}
           />
           <Button
             onClick={handleLogin}
-            bg="blue.500"
-            color="white"
-            _hover={{ bg: "blue.600" }}
-            _active={{ bg: "blue.700" }}
-            borderRadius="4px"
-            border="none"
-            fontSize="18px"
-            height="36px"
-            width="120px"
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            pt="2px"
+            colorScheme="blue"
+            size="lg"
+            mt={6}
             type="submit"
           >
             Login
           </Button>
           {error && (
-            <Text color="red" mt={15}>
+            <Text color="red.500" mt={4}>
               {error}
             </Text>
           )}
@@ -273,7 +246,7 @@ const App = () => {
         <AnimatePresence mode='wait'>
           {view === 'calendar' ? (
             <MotionGrid
-              key={animationKey} // Use animationKey instead of currentDate
+              key={animationKey}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -287,7 +260,6 @@ const App = () => {
                 handlePrevWeek={handlePrevWeek}
                 handleNextWeek={handleNextWeek}
                 handleCurrentWeek={handleCurrentWeek}
-                navigationDirection={navigationDirection}
                 isAnimating={isAnimating}
                 setIsAnimating={setIsAnimating}
               />
