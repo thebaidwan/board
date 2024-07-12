@@ -3,6 +3,10 @@ const express = require('express');
 const cors = require('cors');
 const { MongoClient, ObjectId } = require('mongodb');
 const path = require('path');
+const multer = require('multer');
+const csv = require('csv-parser');
+const XLSX = require('xlsx');
+const fs = require('fs');
 
 const app = express();
 app.use(cors());
@@ -133,6 +137,64 @@ MongoClient.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true
         res.status(500).send('Internal Server Error');
       }
     });
+
+    const upload = multer({ dest: 'uploads/' });
+
+    app.post('/upload', upload.single('file'), async (req, res) => {
+      const file = req.file;
+      if (!file) {
+        return res.status(400).send('No file uploaded.');
+      }
+
+      let jobs = [];
+      const filePath = file.path;
+
+      if (file.mimetype === 'text/csv') {
+        fs.createReadStream(filePath)
+          .pipe(csv())
+          .on('data', (row) => {
+            jobs.push(row);
+          })
+          .on('end', async () => {
+            await saveJobsToDatabase(jobs, db);
+            res.status(200).send('Batch jobs uploaded successfully.');
+          });
+      } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+        const workbook = XLSX.readFile(filePath);
+        const sheet_name_list = workbook.SheetNames;
+        jobs = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);
+        await saveJobsToDatabase(jobs, db);
+        res.status(200).send('Batch jobs uploaded successfully.');
+      } else {
+        res.status(400).send('Unsupported file format.');
+      }
+    });
+
+    const saveJobsToDatabase = async (jobs, db) => {
+      const collection = db.collection(COLLECTION_NAME);
+
+      jobs = jobs.map(job => ({
+        JobNumber: job.JobNumber,
+        Client: job.Client,
+        Facility: job.Facility,
+        JobValue: parseFloat(job.JobValue),
+        Pieces: parseInt(job.Pieces, 10),
+        RequiredByDate: new Date(job.RequiredByDate),
+        Color: job.Color,
+        TestFit: job.TestFit === 'yes' ? 'yes' : 'no',
+        Rush: job.Rush === 'yes' ? 'yes' : 'no',
+        Schedule: job.Schedule ? job.Schedule.split(',').map(date => new Date(date)) : [],
+      }));
+
+      for (const job of jobs) {
+        const existingJob = await collection.findOne({ JobNumber: job.JobNumber });
+        if (existingJob) {
+          console.log(`Skipping existing job with JobNumber: ${job.JobNumber}`);
+        } else {
+          await collection.insertOne(job);
+        }
+      }
+    };
 
     app.get('*', (req, res) => {
       res.sendFile(path.join(__dirname + '/../board/build/index.html'));

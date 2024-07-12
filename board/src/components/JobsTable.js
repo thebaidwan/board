@@ -11,13 +11,45 @@ const JobsTable = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingJobs, setEditingJobs] = useState({});
   const [isFetching, setIsFetching] = useState(false);
+  const [hoveredJobId, setHoveredJobId] = useState(null);
   const toast = useToast();
+  
+  const formatDateForTooltip = (date) => {
+    const options = { month: 'short', day: 'numeric' };
+    return new Date(date).toLocaleDateString('en-US', options);
+  };
+  
+  const renderTooltip = (job) => {
+    if (job.Schedule && job.Schedule.length > 0) {
+      return (
+        <Tooltip label={`Scheduled on ${job.Schedule.map(date => formatDateForTooltip(date)).join(', ')}`}>
+          <span>{job.JobNumber}</span>
+        </Tooltip>
+      );
+    } else {
+      return (
+        <Tooltip label="Not scheduled">
+          <span>{job.JobNumber}</span>
+        </Tooltip>
+      );
+    }
+  };  
 
   const fetchJobs = async () => {
     setIsFetching(true);
     try {
       const response = await axios.get('http://localhost:5000/jobdetails');
       setJobs(response.data);
+
+      const pastJobs = getPastJobs(response.data);
+      if (pastJobs.length > 0 && !isDismissedWithinOneDay()) {
+        const confirmed = window.confirm("It is recommended to delete the jobs that have been installed from Board. Do you want to do it now? (Your choice will be remembered for one day)");
+        if (confirmed) {
+          await deletePastJobs(pastJobs);
+        } else {
+          rememberDismissal();
+        }
+      }
     } catch (error) {
       console.error('Error fetching job details:', error);
     }
@@ -128,6 +160,47 @@ const JobsTable = () => {
     }
   };
 
+  const getPastJobs = (jobs) => {
+    const currentDate = new Date().toISOString().split('T')[0];
+    return jobs.filter(job =>
+      job.Schedule.length > 0 && job.Schedule.every(scheduleDate => new Date(scheduleDate) < new Date(currentDate))
+    );
+  };
+
+  const isDismissedWithinOneDay = () => {
+    const dismissalTimestamp = localStorage.getItem('dismissalTimestamp');
+    if (!dismissalTimestamp) return false;
+    const oneDayInMillis = 24 * 60 * 60 * 1000;
+    return (new Date() - new Date(dismissalTimestamp)) < oneDayInMillis;
+  };
+
+  const rememberDismissal = () => {
+    localStorage.setItem('dismissalTimestamp', new Date().toISOString());
+  };
+
+  const deletePastJobs = async (pastJobs) => {
+    try {
+      await Promise.all(pastJobs.map(job => axios.delete(`http://localhost:5000/jobdetails/${job._id}`)));
+      toast({
+        title: 'Past Jobs Deleted',
+        description: 'All past jobs have been deleted successfully.',
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+      });
+      await fetchJobs();
+    } catch (error) {
+      console.error('Error deleting past jobs:', error);
+      toast({
+        title: 'Error Deleting Past Jobs',
+        description: 'An error occurred while deleting past jobs.',
+        status: 'error',
+        duration: 2000,
+        isClosable: true,
+      });
+    }
+  };
+
   const formatDateForInput = (dateString) => {
     const date = new Date(dateString);
     const year = date.getFullYear();
@@ -139,21 +212,66 @@ const JobsTable = () => {
   };
 
   const duplicateJobNumbers = jobs
-  .map((job) => job.JobNumber)
-  .filter((jobNumber, index, self) => {
-    const isDuplicate = self.indexOf(jobNumber) !== self.lastIndexOf(jobNumber);
-    if (isDuplicate) {
+    .map((job) => job.JobNumber)
+    .filter((jobNumber, index, self) => {
+      const isDuplicate = self.indexOf(jobNumber) !== self.lastIndexOf(jobNumber);
+      if (isDuplicate) {
+        toast({
+          title: "Duplicate Job Number",
+          description: `The job number ${jobNumber} is already added.`,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+      return isDuplicate;
+    });
+
+  const handleBatchUpload = async (event) => {
+    const file = event.target.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await axios.post('http://localhost:5000/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const { skippedJobs } = response.data;
+
+      if (skippedJobs && skippedJobs.length > 0) {
+        toast({
+          title: 'Batch Upload Successful',
+          description: `Jobs have been uploaded successfully. Skipped ${skippedJobs.length} duplicate jobs.`,
+          status: 'success',
+          duration: 2000,
+          isClosable: true,
+        });
+      } else {
+        toast({
+          title: 'Batch Upload Successful',
+          description: 'Jobs have been uploaded successfully.',
+          status: 'success',
+          duration: 2000,
+          isClosable: true,
+        });
+      }
+
+      await fetchJobs();
+    } catch (error) {
+      console.error('Error uploading batch jobs:', error);
       toast({
-        title: "Duplicate Job Number",
-        description: `The job number ${jobNumber} is already added.`,
-        status: "error",
-        duration: 5000,
+        title: 'Error Uploading Batch Jobs',
+        description: 'An error occurred while uploading batch jobs.',
+        status: 'error',
+        duration: 2000,
         isClosable: true,
       });
     }
-    return isDuplicate;
-  });
- 
+  };
+
   return (
     <ChakraProvider>
       <Box w="80%" m="auto" mt="5">
@@ -172,6 +290,34 @@ const JobsTable = () => {
             >
               <RefreshCw size={24} />
             </Box>
+          </Tooltip>
+          <Input
+            type="file"
+            accept=".csv, .xls, .xlsx"
+            onChange={handleBatchUpload}
+            style={{ display: 'none' }}
+            id="file-upload"
+          />
+          <Tooltip label="Upload multiple jobs from a CSV, XLS, or XLSX file. Ensure your file matches the format of the table on the screen, with an empty 'Schedule' column in the end.">
+            <Button
+              leftIcon={<Box as={Plus} size="18px" />}
+              onClick={() => document.getElementById('file-upload').click()}
+              variant="outline"
+              _hover={{ bg: "gray.200" }}
+              _active={{ bg: "gray.300" }}
+              borderRadius="4px"
+              fontSize="18px"
+              height="36px"
+              width="200px"
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              pr="12px"
+              pt="2px"
+              mr="2"
+            >
+              Batch Upload Jobs
+            </Button>
           </Tooltip>
           <Button
             leftIcon={<Box as={Plus} size="18px" />}
@@ -275,16 +421,14 @@ const JobsTable = () => {
                 <Tr
                   key={job._id}
                   bg={duplicateJobNumbers.includes(job.JobNumber) ? 'red.100' : 'white'}
+                  onMouseEnter={() => setHoveredJobId(job._id)}
+                  onMouseLeave={() => setHoveredJobId(null)}
                 >
-                  <Td position="relative">
+                  <Td>
                     {isEditing && (
                       <Checkbox
                         isChecked={selectedJobs.includes(job._id)}
                         onChange={() => handleSelectJob(job._id)}
-                        position="absolute"
-                        top="50%"
-                        left="-5"
-                        transform="translate(-50%, -50%)"
                       />
                     )}
                     {isEditing ? (
@@ -294,7 +438,7 @@ const JobsTable = () => {
                         size="sm"
                       />
                     ) : (
-                      job.JobNumber
+                      renderTooltip(job)
                     )}
                   </Td>
                   <Td>

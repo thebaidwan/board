@@ -1,0 +1,2 @@
+JobNumber,Client,Facility,JobValue,Pieces,RequiredByDate,Color,TestFit,Rush
+J0012212,ABC Client,Steel,12500,5,2024-07-03,Gloss White,No,No
