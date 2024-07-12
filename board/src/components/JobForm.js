@@ -14,6 +14,7 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
+  useToast,
 } from '@chakra-ui/react';
 import { X } from 'react-feather';
 import axios from 'axios';
@@ -28,6 +29,8 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
   const [color, setColor] = useState('');
   const [testFit, setTestFit] = useState(false);
   const [rush, setRush] = useState(false);
+
+  const toast = useToast();
 
   useEffect(() => {
     if (!isOpen) {
@@ -54,11 +57,38 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
     };
 
     try {
-      await axios.post('http://localhost:5000/jobdetails', newJob);
+      const response = await axios.post('http://localhost:5000/jobdetails', newJob);
       fetchJobs();
       onClose();
+      toast({
+        title: 'Job Added',
+        description: `Job ${jobNumber} has been successfully added.`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      if (response.status !== 200 && response.status !== 201) {
+        throw new Error('Failed to add job');
+      }
     } catch (error) {
       console.error('Error saving job:', error);
+      if (error.response && error.response.status !== 400) {
+        toast({
+          title: 'Server Error',
+          description: 'The server encountered an error after the job was added. Please check the server logs for more details.',
+          status: 'warning',
+          duration: 3000,
+          isClosable: true,
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: `Failed to add job. Error: ${error.message}`,
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
     }
   };
 
@@ -78,8 +108,6 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
     <Modal isOpen={isOpen} onClose={onClose} size="md">
       <ModalOverlay />
       <ModalContent
-        bg="rgba(255, 255, 255, 0.6)"
-        backdropFilter="blur(5px)"
         mt="10vh"
         boxShadow="0px 4px 24px rgba(0, 0, 0, 0.1)"
         borderRadius="10px"
@@ -108,17 +136,17 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
           <Stack spacing="18px">
             <FormControl display="flex" alignItems="center" isRequired>
               <FormLabel flex="0 0 120px" fontSize="16px">Job Number</FormLabel>
-              <Input type="text" placeholder="Enter job number" value={jobNumber} onChange={(e) => setJobNumber(e.target.value)} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
+              <Input type="text" placeholder="Enter job number" value={jobNumber} onChange={(e) => setJobNumber(e.target.value)} fontSize="16px" flex="1" />
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Client</FormLabel>
-              <Input type="text" placeholder="Enter client name" value={client} onChange={(e) => setClient(e.target.value)} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
+              <Input type="text" placeholder="Enter client name" value={client} onChange={(e) => setClient(e.target.value)} fontSize="16px" flex="1" />
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Facility</FormLabel>
-              <Select placeholder="Select facility" value={facility} onChange={(e) => setFacility(e.target.value)} fontSize="16px" flex="1" icon={<Box boxSize="0px" />} style={{ appearance: 'textfield' }} borderColor="grey" _hover={{ borderColor: 'grey' }}>
+              <Select placeholder="Select facility" value={facility} onChange={(e) => setFacility(e.target.value)} fontSize="16px" flex="1">
                 <option value="Aluminum">Aluminum</option>
                 <option value="Steel">Steel</option>
                 <option value="Vinyl">Vinyl</option>
@@ -127,22 +155,22 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Job Value</FormLabel>
-              <Input type="text" placeholder="Enter job value" value={jobValue} onChange={(e) => setJobValue(e.target.value)} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
+              <Input type="text" placeholder="Enter job value" value={jobValue} onChange={(e) => setJobValue(e.target.value)} fontSize="16px" flex="1" />
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Pieces</FormLabel>
-              <Input type="text" placeholder="Enter total job pieces" value={pieces} onChange={(e) => setPieces(e.target.value)} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
+              <Input type="text" placeholder="Enter total job pieces" value={pieces} onChange={(e) => setPieces(e.target.value)} fontSize="16px" flex="1" />
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Date</FormLabel>
-              <Input type="date" value={requiredByDate} onChange={(e) => setRequiredByDate(e.target.value)} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
+              <Input type="date" value={requiredByDate} onChange={(e) => setRequiredByDate(e.target.value)} fontSize="16px" flex="1" />
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Color</FormLabel>
-              <Input type="text" placeholder="Enter job color" value={color} onChange={(e) => setColor(e.target.value)} fontSize="16px" flex="1" borderColor="grey" _hover={{ borderColor: 'grey' }} />
+              <Input type="text" placeholder="Enter job color" value={color} onChange={(e) => setColor(e.target.value)} fontSize="16px" flex="1" />
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
@@ -151,14 +179,6 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
                 <Switch
                   isChecked={testFit}
                   onChange={(e) => setTestFit(e.target.checked)}
-                  css={{
-                    '.chakra-switch__track': {
-                      backgroundColor: testFit ? '#ED7D31' : 'grey',
-                    },
-                    '.chakra-switch__thumb': {
-                      backgroundColor: 'white',
-                    },
-                  }}
                 />
               </Box>
             </FormControl>
@@ -169,14 +189,6 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
                 <Switch
                   isChecked={rush}
                   onChange={(e) => setRush(e.target.checked)}
-                  css={{
-                    '.chakra-switch__track': {
-                      backgroundColor: rush ? '#ED7D31' : 'grey',
-                    },
-                    '.chakra-switch__thumb': {
-                      backgroundColor: 'white',
-                    },
-                  }}
                 />
               </Box>
             </FormControl>
@@ -185,12 +197,8 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
 
         <ModalFooter>
           <Button
-            bg="#ED7D31"
-            color="white"
-            _hover={{ bg: "#F1995D" }}
-            _active={{ bg: "#ED7D31" }}
+            colorScheme="blue"
             borderRadius="4px"
-            border="none"
             fontSize="18px"
             height="36px"
             width="120px"

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box, Grid, Text, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody,
-  Table, Thead, Tbody, Tr, Th, Td, Flex, Tooltip
+  Table, Thead, Tbody, Tr, Th, Td, Flex, Tooltip, useToast, ChakraProvider
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
@@ -9,6 +9,7 @@ import axios from 'axios';
 const MotionBox = motion(Box);
 
 const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirection, isAnimating, setIsAnimating }) => {
+  const toast = useToast();
   const startOfWeek = new Date(currentDate);
   startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1);
 
@@ -17,6 +18,9 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [checkedJobs, setCheckedJobs] = useState([]);
+  const [totalJobValue, setTotalJobValue] = useState(0); // New state for total job value
+
+  const dayNames = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -37,11 +41,18 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
       } catch (error) {
         console.error('Error fetching jobs:', error);
         setJobs([]);
+        toast({
+          title: "Error",
+          description: "Unable to fetch jobs.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
       }
     };
 
     fetchJobs();
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     if (isAnimating) {
@@ -59,6 +70,18 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
       return () => clearTimeout(timer);
     }
   }, [isAnimating]);
+
+  useEffect(() => {
+    if (selectedDate) {
+      const selectedDateString = selectedDate.toDateString();
+      const jobsForDay = selectedJobs[selectedDateString] || [];
+      const totalValue = jobsForDay.reduce((sum, job) => {
+        const numDates = job.Schedule.length;
+        return sum + (job.JobValue / numDates);
+      }, 0);
+      setTotalJobValue(totalValue);
+    }
+  }, [checkedJobs, selectedDate, selectedJobs]); // Recalculate total job value when checkedJobs or selectedDate changes
 
   const days = [];
   for (let i = 0; i < 7; i++) {
@@ -96,17 +119,18 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
         borderWidth="1px"
         borderRadius="md"
         p={2}
-        m={1}
+        m={0.5}
         opacity={isWeekend ? 0.6 : 0.9}
         bg={isWeekend ? '#F0F0F0' : 'white'}
-        width="250px"
+        width="255px"
         height="auto"
-        border={isToday ? '1px solid #ED7D31' : '1px solid gray'}
+        border={isToday ? '1px solid' : '1px solid gray'}
+        borderColor={isToday ? 'blue.200' : 'gray.200'}
         textAlign="left"
         paddingTop={0}
         position="relative"
       >
-        <Text fontSize='22px' fontWeight={isToday ? '500' : 'normal'} color={isToday ? '#ED7D31' : (isWeekend ? 'gray.400' : 'inherit')}>
+        <Text fontSize='22px' fontWeight={isToday ? '500' : 'normal'} color={isToday ? 'blue.500' : (isWeekend ? 'gray.400' : 'inherit')}>
           {dayDate.toLocaleString('default', { month: 'short' })} {dayDate.getDate()}
         </Text>
         <Text
@@ -122,10 +146,10 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
         {jobsForDay.length > 0 && (
           <Box mt={2}>
             {jobsForDay.map(job => (
-              <Box key={job.JobNumber} border="1px solid #ED7D31" borderRadius="md" p={2} mb={2} bg="#FFF5E5">
+              <Box key={job.JobNumber} border="1px solid" borderRadius="md" p={2} mb={2} bg="gray.100" borderColor="gray.100">
                 <Flex justifyContent="space-between" alignItems="center">
                   <Box display="flex" alignItems="center">
-                    <Text fontWeight="bold" fontSize="14px">{job.JobNumber}</Text>
+                    <Text fontWeight="bold" fontSize="14px" color="blue.800">{job.JobNumber}</Text>
                     <Tooltip label={facilityColor(job.Facility).label} fontSize="md">
                       <Box w="8px" h="8px" borderRadius="full" bg={facilityColor(job.Facility).color} ml={1}></Box>
                     </Tooltip>
@@ -140,13 +164,13 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
                       </Tooltip>
                     )}
                   </Box>
-                  <Text fontSize="14px">${job.JobValue}</Text>
+                  <Text fontSize="14px" color="blue.800">${job.JobValue}</Text>
                 </Flex>
-                <Text fontSize="14px">{job.Client}</Text>
-                <Text fontSize="14px">{job.Color}</Text>
+                <Text fontSize="14px" color="blue.800">{job.Client}</Text>
+                <Text fontSize="14px" color="blue.800">{job.Color}</Text>
                 <Flex justifyContent="space-between" alignItems="center">
-                  <Text fontSize="14px">Pieces: {job.Pieces}</Text>
-                  <Text fontSize="14px">Due: {new Date(job.RequiredByDate).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}</Text>
+                  <Text fontSize="14px" color="blue.800">Pieces: {job.Pieces}</Text>
+                  <Text fontSize="14px" color="blue.800">Due: {new Date(job.RequiredByDate).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}</Text>
                 </Flex>
               </Box>
             ))}
@@ -196,126 +220,84 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, navigationDirec
             });
           } catch (error) {
             console.error(`Error updating schedule for job ${job.JobNumber}:`, error);
+            toast({
+              title: "Error",
+              description: `Unable to update schedule for job ${job.JobNumber}.`,
+              status: "error",
+              duration: 5000,
+              isClosable: true,
+            });
           }
         }
       }
 
       for (let jobNumber of checkedJobs) {
-        try {
-          await axios.put(`http://localhost:5000/jobdetails/${jobNumber}/add-to-schedule`, {
-            date: selectedDateString
-          });
-        } catch (error) {
-          console.error(`Error updating schedule for job ${jobNumber}:`, error);
+        const job = jobs.find(j => j.JobNumber === jobNumber);
+        if (job && !job.Schedule.includes(selectedDateString)) {
+          try {
+            await axios.put(`http://localhost:5000/jobdetails/${job.JobNumber}/add-to-schedule`, {
+              date: selectedDateString
+            });
+          } catch (error) {
+            console.error(`Error updating schedule for job ${jobNumber}:`, error);
+            toast({
+              title: "Error",
+              description: `Unable to update schedule for job ${jobNumber}.`,
+              status: "error",
+              duration: 5000,
+              isClosable: true,
+            });
+          }
         }
       }
-
-      setIsModalOpen(false);
     }
+
+    handleCloseModal();
   };
 
   return (
-    <motion.div
-      key={weekNumber}
-      initial={{ opacity: 0, x: navigationDirection === 'next' ? 100 : -100 }}
-      animate={{ opacity: 1, x: 0, y: 0 }}
-      exit={{ opacity: 0, x: navigationDirection === 'next' ? -100 : 100 }}
-      transition={{ duration: 0.6 }}
-      layout
-    >
-      <Grid templateColumns="repeat(7, 1fr)" gap={1}>
-        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, index) => (
-          <Box key={day} fontWeight="500" textAlign="center" color={index >= 5 ? '#9B9B9B' : '#5C5C5C'}>
-            {day}
-          </Box>
+    <ChakraProvider>
+      <Grid templateColumns="repeat(7, 1fr)" gap={2}>
+        {dayNames.map(day => (
+          <Box key={day} textAlign="center" fontWeight="500" p={1}>{day}</Box>
         ))}
         {days}
       </Grid>
-
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal} size="xl">
-        <ModalOverlay />
-        <ModalContent
-          bg="rgba(255, 255, 255, 0.6)"
-          backdropFilter="blur(5px)"
-          mt="10vh"
-          boxShadow="0px 4px 24px rgba(0, 0, 0, 0.1)"
-          borderRadius="10px"
-          maxW="1200px"
-          mx="auto"
-          p="30px"
-          textAlign="center"
-        >
-          <ModalHeader display="flex" alignItems="center" justifyContent="center" pb="20px" position="relative">
-            <Box fontWeight="600" fontSize="20px">Select Jobs to Schedule</Box>
-            <Box position="absolute" top="1px" right="1px">
-              <Box
-                as="span"
-                fontSize="24px"
-                color="black"
-                onClick={handleCloseModal}
-                cursor="pointer"
-                aria-label="Close"
-                _hover={{ opacity: 0.7 }}
-                transition="opacity 0.3s ease"
-              >
-                &times;
-              </Box>
-            </Box>
-          </ModalHeader>
-
-          <ModalBody maxHeight="70vh" overflowY="auto">
-            <Table colorScheme="gray" size="sm">
-              <Thead>
-                <Tr>
-                  <Th>Job Number</Th>
-                  <Th>Client</Th>
-                  <Th>Facility</Th>
-                  <Th>Job Value</Th>
-                  <Th>Pieces</Th>
-                  <Th>Required By</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {jobs.map(job => (
-                  <Tr
-                    key={job.JobNumber}
-                    onClick={() => handleRowClick(job.JobNumber)}
-                    bg={checkedJobs.includes(job.JobNumber) ? 'orange.100' : 'transparent'}
-                    color="gray.800"
-                    cursor="pointer"
-                    _hover={{ bg: 'orange.50' }}
-                  >
-                    <Td>{job.JobNumber}</Td>
-                    <Td>{job.Client}</Td>
-                    <Td>{job.Facility}</Td>
-                    <Td>{job.JobValue}</Td>
-                    <Td>{job.Pieces}</Td>
-                    <Td>{new Date(job.RequiredByDate).toLocaleDateString()}</Td>
+      <Box m={5}>
+        <Modal isOpen={isModalOpen} onClose={handleCloseModal} size="5xl">
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Select Jobs for {selectedDate ? selectedDate.toDateString() : ''}</ModalHeader>
+            <ModalBody>
+              <Table>
+                <Thead>
+                  <Tr>
+                    <Th>Job Number</Th>
+                    <Th>Client</Th>
+                    <Th>Job Value</Th>
+                    <Th>Facility</Th>
                   </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          </ModalBody>
-
-          <ModalFooter>
-            <Button
-              bg="#ED7D31"
-              color="white"
-              _hover={{ bg: "#F1995D" }}
-              _active={{ bg: "#ED7D31" }}
-              borderRadius="4px"
-              border="none"
-              fontSize="18px"
-              height="36px"
-              width="120px"
-              onClick={handleConfirmSelection}
-            >
-              Confirm
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </motion.div>
+                </Thead>
+                <Tbody>
+                  {jobs.map(job => (
+                    <Tr key={job.JobNumber} onClick={() => handleRowClick(job.JobNumber)} style={{ cursor: 'pointer', backgroundColor: checkedJobs.includes(job.JobNumber) ? '#EDF2F7' : 'transparent' }}>
+                      <Td>{job.JobNumber}</Td>
+                      <Td>{job.Client}</Td>
+                      <Td>{job.JobValue}</Td>
+                      <Td>{job.Facility}</Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </ModalBody>
+            <ModalFooter>
+              <Button colorScheme="blue" onClick={handleConfirmSelection} mr={3}>Confirm</Button>
+              <Button variant="ghost" onClick={handleCloseModal}>Cancel</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </Box>
+    </ChakraProvider>
   );
 };
 

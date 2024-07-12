@@ -37,6 +37,7 @@ const App = () => {
   const [error, setError] = useState('');
   const [navigationDirection, setNavigationDirection] = useState('current');
   const [isAnimating, setIsAnimating] = useState(false);
+  const [animationKey, setAnimationKey] = useState(0);
 
   useEffect(() => {
     setWeekNumber(getWeekNumber(currentDate));
@@ -57,16 +58,33 @@ const App = () => {
   const handlePrevWeek = () => {
     setNavigationDirection('prev');
     setIsAnimating(true);
+    setAnimationKey(prevKey => prevKey + 1); // Update animation key
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate.getTime());
+      newDate.setDate(newDate.getDate() - 7);
+      return newDate;
+    });
+    setTimeout(() => setIsAnimating(false), 300);
   };
 
   const handleNextWeek = () => {
     setNavigationDirection('next');
     setIsAnimating(true);
+    setAnimationKey(prevKey => prevKey + 1); // Update animation key
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate.getTime());
+      newDate.setDate(newDate.getDate() + 7);
+      return newDate;
+    });
+    setTimeout(() => setIsAnimating(false), 300);
   };
 
   const handleCurrentWeek = () => {
     setNavigationDirection('current');
     setIsAnimating(true);
+    setAnimationKey(prevKey => prevKey + 1); // Update animation key
+    setCurrentDate(new Date());
+    setTimeout(() => setIsAnimating(false), 300);
   };
 
   const handleViewChange = () => {
@@ -140,10 +158,10 @@ const App = () => {
           />
           <Button
             onClick={handleLogin}
-            bg="#ED7D31"
+            bg="blue.500"
             color="white"
-            _hover={{ bg: "#F1995D" }}
-            _active={{ bg: "#ED7D31" }}
+            _hover={{ bg: "blue.600" }}
+            _active={{ bg: "blue.700" }}
             borderRadius="4px"
             border="none"
             fontSize="18px"
@@ -169,11 +187,11 @@ const App = () => {
 
   return (
     <ChakraProvider>
-      <Flex direction="column" align="left" justify="center" minH="100vh">
+      <Flex direction="column" align="left" justify="flex-start" minH="100vh">
         <Box w="100%" bg="white" p={2} mb={8} boxShadow="none">
           <Flex justifyContent="space-between" alignItems="left" w="95%">
-            <Box flex="1" ml={view === 'calendar' ? '1' : '192'} mt={view === 'calendar' ? '1' : '5'}>
-              <Heading as="h1" color="#ED7D31" fontWeight="500" textAlign="left">
+            <Box flex="1" ml={view === 'calendar' ? '0' : '192'} mt={view === 'calendar' ? '1' : '5'}>
+              <Heading as="h1" color="blue.500" fontWeight="500" textAlign="left">
                 {view === 'calendar' ? (
                   <Flex align="center">
                     <Text>
@@ -201,7 +219,7 @@ const App = () => {
               </Heading>
             </Box>
             {view === 'calendar' ? (
-              <HStack mr={-100}>
+              <HStack mr={-90}>
                 <Box width="30px" height="30px" display="flex" alignItems="center" justifyContent="center">
                   <FeatherIcon
                     icon="chevron-left"
@@ -252,11 +270,34 @@ const App = () => {
             )}
           </Flex>
         </Box>
-        {view === 'calendar' ? (
-          <CalendarView currentDate={currentDate} setCurrentDate={setCurrentDate} weekNumber={weekNumber} handlePrevWeek={handlePrevWeek} handleNextWeek={handleNextWeek} handleCurrentWeek={handleCurrentWeek} navigationDirection={navigationDirection} isAnimating={isAnimating} setIsAnimating={setIsAnimating} />
-        ) : (
-          <JobsTable />
-        )}
+        <AnimatePresence mode='wait'>
+          {view === 'calendar' ? (
+            <MotionGrid
+              key={animationKey} // Use animationKey instead of currentDate
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <CalendarView
+                currentDate={currentDate}
+                setCurrentDate={setCurrentDate}
+                weekNumber={weekNumber}
+                handleViewChange={handleViewChange}
+                handlePrevWeek={handlePrevWeek}
+                handleNextWeek={handleNextWeek}
+                handleCurrentWeek={handleCurrentWeek}
+                navigationDirection={navigationDirection}
+                isAnimating={isAnimating}
+                setIsAnimating={setIsAnimating}
+              />
+            </MotionGrid>
+          ) : (
+            <Grid key="jobsTable">
+              <JobsTable />
+            </Grid>
+          )}
+        </AnimatePresence>
       </Flex>
     </ChakraProvider>
   );

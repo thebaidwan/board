@@ -101,6 +101,28 @@ MongoClient.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true
       }
     });
 
+    app.put('/jobdetails/:jobId', async (req, res) => {
+      const { jobId } = req.params;
+      const updateData = req.body;
+
+      try {
+        const result = await db.collection(COLLECTION_NAME).updateOne(
+          { _id: new ObjectId(jobId) },
+          { $set: updateData }
+        );
+
+        if (result.matchedCount === 0) {
+          return res.status(404).send('Job not found');
+        }
+
+        const updatedJob = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(jobId) });
+        res.json(updatedJob);
+      } catch (error) {
+        console.error('Error updating job detail:', error);
+        res.status(500).send('Internal Server Error');
+      }
+    });
+
     app.delete('/jobdetails/:id', async (req, res) => {
       const { id } = req.params;
       try {
