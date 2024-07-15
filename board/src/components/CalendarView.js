@@ -24,7 +24,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
 
   const fetchJobs = async () => {
     try {
-      const res = await axios.get('${process.env.REACT_APP_API_URL}/jobdetails');
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/jobdetails`);
       setJobs(res.data);
 
       const initialSelectedJobs = {};
