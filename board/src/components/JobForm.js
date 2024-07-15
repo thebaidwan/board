@@ -170,7 +170,7 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
-              <FormLabel flex="0 0 120px" fontSize="16px">Date</FormLabel>
+              <FormLabel flex="0 0 120px" fontSize="16px">Required By</FormLabel>
               <Input type="date" value={requiredByDate} onChange={(e) => setRequiredByDate(e.target.value)} fontSize="16px" flex="1" />
             </FormControl>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Table, Thead, Tbody, Tr, Th, Td, Button, Flex, Checkbox, IconButton, Input, Select, Spinner, Tooltip, useToast, ChakraProvider } from '@chakra-ui/react';
-import { Plus, Trash2, Edit, X, Save, RefreshCw } from 'react-feather';
+import { Plus, Trash2, Edit, X, Save, RefreshCw, ChevronDown, ChevronUp } from 'react-feather';
 import axios from 'axios';
 import JobForm from './JobForm';
 
@@ -12,28 +12,28 @@ const JobsTable = () => {
   const [editingJobs, setEditingJobs] = useState({});
   const [isFetching, setIsFetching] = useState(false);
   const [hoveredJobId, setHoveredJobId] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const toast = useToast();
-  
+
   const formatDateForTooltip = (date) => {
     const options = { month: 'short', day: 'numeric' };
     return new Date(date).toLocaleDateString('en-US', options);
   };
-  
+
   const renderTooltip = (job) => {
     if (job.Schedule && job.Schedule.length > 0) {
-      return (
-        <Tooltip label={`Scheduled on ${job.Schedule.map(date => formatDateForTooltip(date)).join(', ')}`}>
-          <span>{job.JobNumber}</span>
-        </Tooltip>
-      );
+      return `Scheduled for ${job.Schedule.map(date => formatDateForTooltip(date)).join(', ')}`;
     } else {
-      return (
-        <Tooltip label="Not scheduled">
-          <span>{job.JobNumber}</span>
-        </Tooltip>
-      );
+      return "Not scheduled";
     }
-  };  
+  };
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key === key) {
+      return sortConfig.direction === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />;
+    }
+    return null;
+  };
 
   const fetchJobs = async () => {
     setIsFetching(true);
@@ -272,6 +272,24 @@ const JobsTable = () => {
     }
   };
 
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedJobs = [...jobs].sort((a, b) => {
+    if (a[sortConfig.key] < b[sortConfig.key]) {
+      return sortConfig.direction === 'asc' ? -1 : 1;
+    }
+    if (a[sortConfig.key] > b[sortConfig.key]) {
+      return sortConfig.direction === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
+
   return (
     <ChakraProvider>
       <Box w="80%" m="auto" mt="5">
@@ -405,142 +423,207 @@ const JobsTable = () => {
           <Table variant="striped" colorScheme="gray" size="sm" border="1px" borderColor="gray.200" borderRadius="md">
             <Thead>
               <Tr>
-                <Th>Job Number</Th>
-                <Th>Client</Th>
-                <Th>Facility</Th>
-                <Th>Job Value</Th>
-                <Th>Pieces</Th>
-                <Th>Required By</Th>
-                <Th>Color</Th>
-                <Th>Test Fit</Th>
-                <Th>Rush</Th>
+                <Th onClick={() => handleSort('JobNumber')}>
+                  <Flex alignItems="center">
+                    <Box>Job Number</Box>
+                    <Box>{getSortIcon('JobNumber')}</Box>
+                  </Flex>
+                </Th>
+                <Th onClick={() => handleSort('Client')}>
+                  <Flex alignItems="center">
+                    <Box>Client</Box>
+                    <Box>{getSortIcon('Client')}</Box>
+                  </Flex>
+                </Th>
+                <Th onClick={() => handleSort('Facility')}>
+                  <Flex alignItems="center">
+                    <Box>Facility</Box>
+                    <Box>{getSortIcon('Facility')}</Box>
+                  </Flex>
+                </Th>
+                <Th onClick={() => handleSort('JobValue')}>
+                  <Flex alignItems="center">
+                    <Box>Job Value</Box>
+                    <Box>{getSortIcon('JobValue')}</Box>
+                  </Flex>
+                </Th>
+                <Th onClick={() => handleSort('Pieces')}>
+                  <Flex alignItems="center">
+                    <Box>Pieces</Box>
+                    <Box>{getSortIcon('Pieces')}</Box>
+                  </Flex>
+                </Th>
+                <Th onClick={() => handleSort('RequiredByDate')}>
+                  <Flex alignItems="center">
+                    <Box>Required By</Box>
+                    <Box>{getSortIcon('RequiredByDate')}</Box>
+                  </Flex>
+                </Th>
+                <Th onClick={() => handleSort('Color')}>
+                  <Flex alignItems="center">
+                    <Box>Color</Box>
+                    <Box>{getSortIcon('Color')}</Box>
+                  </Flex>
+                </Th>
+                <Th onClick={() => handleSort('TestFit')}>
+                  <Flex alignItems="center">
+                    <Box>Test Fit</Box>
+                    <Box>{getSortIcon('TestFit')}</Box>
+                  </Flex>
+                </Th>
+                <Th onClick={() => handleSort('Rush')}>
+                  <Flex alignItems="center">
+                    <Box>Rush</Box>
+                    <Box>{getSortIcon('Rush')}</Box>
+                  </Flex>
+                </Th>
               </Tr>
             </Thead>
             <Tbody>
-              {jobs.map((job) => (
-                <Tr
-                  key={job._id}
-                  bg={duplicateJobNumbers.includes(job.JobNumber) ? 'red.100' : 'white'}
-                  onMouseEnter={() => setHoveredJobId(job._id)}
-                  onMouseLeave={() => setHoveredJobId(null)}
-                >
-                  <Td>
-                    {isEditing && (
-                      <Checkbox
-                        isChecked={selectedJobs.includes(job._id)}
-                        onChange={() => handleSelectJob(job._id)}
-                      />
-                    )}
-                    {isEditing ? (
-                      <Input
-                        value={editingJobs[job._id]?.JobNumber || job.JobNumber}
-                        onChange={(e) => handleInputChange(job._id, 'JobNumber', e.target.value)}
-                        size="sm"
-                      />
-                    ) : (
-                      renderTooltip(job)
-                    )}
-                  </Td>
-                  <Td>
-                    {isEditing ? (
-                      <Input
-                        value={editingJobs[job._id]?.Client || job.Client}
-                        onChange={(e) => handleInputChange(job._id, 'Client', e.target.value)}
-                        size="sm"
-                      />
-                    ) : (
-                      job.Client
-                    )}
-                  </Td>
-                  <Td>
-                    {isEditing ? (
-                      <Select
-                        value={editingJobs[job._id]?.Facility || job.Facility}
-                        onChange={(e) => handleInputChange(job._id, 'Facility', e.target.value)}
-                        size="sm"
-                      >
-                        <option value="Aluminum">Aluminum</option>
-                        <option value="Steel">Steel</option>
-                        <option value="Vinyl">Vinyl</option>
-                      </Select>
-                    ) : (
-                      job.Facility
-                    )}
-                  </Td>
-                  <Td>
-                    {isEditing ? (
-                      <Input
-                        value={editingJobs[job._id]?.JobValue || job.JobValue}
-                        onChange={(e) => handleInputChange(job._id, 'JobValue', e.target.value)}
-                        size="sm"
-                      />
-                    ) : (
-                      job.JobValue
-                    )}
-                  </Td>
-                  <Td>
-                    {isEditing ? (
-                      <Input
-                        value={editingJobs[job._id]?.Pieces || job.Pieces}
-                        onChange={(e) => handleInputChange(job._id, 'Pieces', e.target.value)}
-                        size="sm"
-                      />
-                    ) : (
-                      job.Pieces
-                    )}
-                  </Td>
-                  <Td>
-                    {isEditing ? (
-                      <Input
-                        type="date"
-                        value={editingJobs[job._id]?.RequiredByDate || formatDateForInput(job.RequiredByDate)}
-                        onChange={(e) => handleInputChange(job._id, 'RequiredByDate', e.target.value)}
-                        size="sm"
-                      />
-                    ) : (
-                      new Date(job.RequiredByDate).toLocaleDateString('en-US', { dateStyle: 'long' })
-                    )}
-                  </Td>
-                  <Td>
-                    {isEditing ? (
-                      <Input
-                        value={editingJobs[job._id]?.Color || job.Color}
-                        onChange={(e) => handleInputChange(job._id, 'Color', e.target.value)}
-                        size="sm"
-                      />
-                    ) : (
-                      job.Color
-                    )}
-                  </Td>
-                  <Td>
-                    {isEditing ? (
-                      <Select
-                        value={editingJobs[job._id]?.TestFit || job.TestFit}
-                        onChange={(e) => handleInputChange(job._id, 'TestFit', e.target.value)}
-                        size="sm"
-                      >
-                        <option value="yes">yes</option>
-                        <option value="no">no</option>
-                      </Select>
-                    ) : (
-                      job.TestFit
-                    )}
-                  </Td>
-                  <Td>
-                    {isEditing ? (
-                      <Select
-                        value={editingJobs[job._id]?.Rush || job.Rush}
-                        onChange={(e) => handleInputChange(job._id, 'Rush', e.target.value)}
-                        size="sm"
-                      >
-                        <option value="yes">yes</option>
-                        <option value="no">no</option>
-                      </Select>
-                    ) : (
-                      job.Rush
-                    )}
-                  </Td>
-                </Tr>
+              {sortedJobs.map((job) => (
+                <Tooltip key={job._id} label={renderTooltip(job)} placement="left" hasArrow>
+                  <Tr
+                    bg={duplicateJobNumbers.includes(job.JobNumber) ? 'red.100' : 'white'}
+                    onMouseEnter={() => setHoveredJobId(job._id)}
+                    onMouseLeave={() => setHoveredJobId(null)}
+                  >
+                    <Td>
+                      {isEditing && (
+                        <Flex alignItems="center">
+                          <Checkbox
+                            isChecked={selectedJobs.includes(job._id)}
+                            onChange={() => handleSelectJob(job._id)}
+                            style={{ position: 'relative', left: '-50px' }}
+                          />
+                          <Input
+                            value={editingJobs[job._id]?.JobNumber || job.JobNumber}
+                            onChange={(e) => {
+                              if (e.target.value.trim() === '') {
+                                toast({
+                                  title: "Error",
+                                  description: "Job Number cannot be empty",
+                                  status: "error",
+                                  duration: 5000,
+                                  isClosable: true,
+                                });
+                                return;
+                              }
+                              handleInputChange(job._id, 'JobNumber', e.target.value);
+                            }}
+                            size="sm"
+                            borderColor={isEditing ? "gray.200" : "gray.200"}
+                          />
+                        </Flex>
+                      )}
+                      {!isEditing && job.JobNumber}
+                    </Td>
+                    <Td>
+                      {isEditing ? (
+                        <Input
+                          value={editingJobs[job._id]?.Client || job.Client}
+                          onChange={(e) => handleInputChange(job._id, 'Client', e.target.value)}
+                          size="sm"
+                          borderColor={isEditing ? "gray.200" : "gray.200"}
+                        />
+                      ) : (
+                        job.Client
+                      )}
+                    </Td>
+                    <Td>
+                      {isEditing ? (
+                        <Select
+                          value={editingJobs[job._id]?.Facility || job.Facility}
+                          onChange={(e) => handleInputChange(job._id, 'Facility', e.target.value)}
+                          size="sm"
+                        >
+                          <option value="Aluminum">Aluminum</option>
+                          <option value="Steel">Steel</option>
+                          <option value="Vinyl">Vinyl</option>
+                        </Select>
+                      ) : (
+                        job.Facility
+                      )}
+                    </Td>
+                    <Td>
+                      {isEditing ? (
+                        <Input
+                          value={editingJobs[job._id]?.JobValue || job.JobValue}
+                          onChange={(e) => handleInputChange(job._id, 'JobValue', e.target.value)}
+                          size="sm"
+                          borderColor={isEditing ? "gray.200" : "gray.200"}
+                        />
+                      ) : (
+                        job.JobValue
+                      )}
+                    </Td>
+                    <Td>
+                      {isEditing ? (
+                        <Input
+                          value={editingJobs[job._id]?.Pieces || job.Pieces}
+                          onChange={(e) => handleInputChange(job._id, 'Pieces', e.target.value)}
+                          size="sm"
+                          borderColor={isEditing ? "gray.200" : "gray.200"}
+                        />
+                      ) : (
+                        job.Pieces
+                      )}
+                    </Td>
+                    <Td>
+                      {isEditing ? (
+                        <Input
+                          type="date"
+                          value={editingJobs[job._id]?.RequiredByDate || formatDateForInput(job.RequiredByDate)}
+                          onChange={(e) => handleInputChange(job._id, 'RequiredByDate', e.target.value)}
+                          size="sm"
+                          borderColor={isEditing ? "gray.200" : "gray.200"}
+                        />
+                      ) : (
+                        new Date(job.RequiredByDate).toLocaleDateString('en-US', { dateStyle: 'long' })
+                      )}
+                    </Td>
+                    <Td>
+                      {isEditing ? (
+                        <Input
+                          value={editingJobs[job._id]?.Color || job.Color}
+                          onChange={(e) => handleInputChange(job._id, 'Color', e.target.value)}
+                          size="sm"
+                          borderColor={isEditing ? "gray.200" : "gray.200"}
+                          style={{ verticalAlign: 'middle' }}
+                        />
+                      ) : (
+                        job.Color
+                      )}
+                    </Td>
+                    <Td>
+                      {isEditing ? (
+                        <Select
+                          value={editingJobs[job._id]?.TestFit || job.TestFit}
+                          onChange={(e) => handleInputChange(job._id, 'TestFit', e.target.value)}
+                          size="sm"
+                        >
+                          <option value="yes">yes</option>
+                          <option value="no">no</option>
+                        </Select>
+                      ) : (
+                        job.TestFit
+                      )}
+                    </Td>
+                    <Td>
+                      {isEditing ? (
+                        <Select
+                          value={editingJobs[job._id]?.Rush || job.Rush}
+                          onChange={(e) => handleInputChange(job._id, 'Rush', e.target.value)}
+                          size="sm"
+                        >
+                          <option value="yes">yes</option>
+                          <option value="no">no</option>
+                        </Select>
+                      ) : (
+                        job.Rush
+                      )}
+                    </Td>
+                  </Tr>
+                </Tooltip>
               ))}
             </Tbody>
           </Table>

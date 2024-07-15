@@ -71,11 +71,23 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
       const jobsForDay = selectedJobs[selectedDateString] || [];
       const totalValue = jobsForDay.reduce((sum, job) => {
         const numDates = job.Schedule.length;
-        return sum + (job.JobValue / numDates);
+        return sum + (job.JobValue / (numDates > 0 ? numDates : 1));
       }, 0);
       setTotalJobValue(totalValue);
     }
-  }, [checkedJobs, selectedDate, selectedJobs]);
+  }, [selectedDate, selectedJobs, jobs]);
+
+  useEffect(() => {
+    if (selectedDate) {
+      const selectedDateString = selectedDate.toDateString();
+      const jobsForDay = checkedJobs.map(jobNumber => jobs.find(job => job.JobNumber === jobNumber));
+      const totalValue = jobsForDay.reduce((sum, job) => {
+        const numDates = job.Schedule.length;
+        return sum + (job.JobValue / (numDates > 0 ? numDates : 1));
+      }, 0);
+      setTotalJobValue(totalValue);
+    }
+  }, [checkedJobs, selectedDate, jobs]);
 
   const days = [];
   for (let i = 0; i < 7; i++) {
@@ -100,7 +112,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
     const jobsForDay = selectedJobs[dayDate.toDateString()] || [];
     const totalJobValue = jobsForDay.reduce((sum, job) => {
       const numDates = job.Schedule.length;
-      return sum + (job.JobValue / numDates);
+      return sum + (job.JobValue / (numDates > 0 ? numDates : 1));
     }, 0);
 
     days.push(
@@ -196,6 +208,18 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
     }
   };
 
+  useEffect(() => {
+    if (selectedDate) {
+      const selectedDateString = selectedDate.toDateString();
+      const jobsForDay = checkedJobs.map(jobNumber => jobs.find(job => job.JobNumber === jobNumber));
+      const totalValue = jobsForDay.reduce((sum, job) => {
+        const numDates = job.Schedule.includes(selectedDateString) ? job.Schedule.length : job.Schedule.length + 1;
+        return sum + (job.JobValue / (numDates > 0 ? numDates : 1));
+      }, 0);
+      setTotalJobValue(totalValue);
+    }
+  }, [checkedJobs, selectedDate, jobs]);
+
   const handleConfirmSelection = async () => {
     if (selectedDate) {
       const selectedDateString = selectedDate.toDateString();
@@ -244,6 +268,13 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
           }
         }
       }
+
+      const jobsForDay = updatedSelectedJobs[selectedDateString] || [];
+      const totalValue = jobsForDay.reduce((sum, job) => {
+        const numDates = job.Schedule.length;
+        return sum + (job.JobValue / (numDates > 0 ? numDates : 1));
+      }, 0);
+      setTotalJobValue(totalValue);
     }
 
     handleCloseModal();
@@ -283,6 +314,9 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
                   ))}
                 </Tbody>
               </Table>
+              <Text fontSize="lg" mt="30px" color={totalJobValue < 15000 ? "red" : "green"}>
+                Total Value: ${totalJobValue.toFixed(2)}
+              </Text>
             </ModalBody>
             <ModalFooter>
               <Button colorScheme="blue" onClick={handleConfirmSelection} mr={3}>Confirm</Button>
