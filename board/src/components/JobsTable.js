@@ -215,15 +215,6 @@ const JobsTable = () => {
     .map((job) => job.JobNumber)
     .filter((jobNumber, index, self) => {
       const isDuplicate = self.indexOf(jobNumber) !== self.lastIndexOf(jobNumber);
-      if (isDuplicate) {
-        toast({
-          title: "Duplicate Job Number",
-          description: `The job number ${jobNumber} is already added.`,
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      }
       return isDuplicate;
     });
 
@@ -484,16 +475,28 @@ const JobsTable = () => {
                 <Tooltip key={job._id} label={renderTooltip(job)} placement="left" hasArrow>
                   <Tr
                     bg={duplicateJobNumbers.includes(job.JobNumber) ? 'red.100' : 'white'}
-                    onMouseEnter={() => setHoveredJobId(job._id)}
+                    onMouseEnter={() => {
+                      setHoveredJobId(job._id);
+                      if (duplicateJobNumbers.includes(job.JobNumber)) {
+                        toast({
+                          title: "Duplicate Job Detected",
+                          description: `Job Number ${job.JobNumber} has been added more than once.`,
+                          status: "warning",
+                          duration: 5000,
+                          isClosable: true,
+                        });
+                      }
+                    }}
                     onMouseLeave={() => setHoveredJobId(null)}
                   >
-                    <Td>
+                    <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
                       {isEditing && (
                         <Flex alignItems="center">
                           <Checkbox
                             isChecked={selectedJobs.includes(job._id)}
                             onChange={() => handleSelectJob(job._id)}
-                            style={{ position: 'relative', left: '-50px' }}
+                            style={{ position: 'relative', marginRight: '10px' }}
+                            borderColor="blue.100"
                           />
                           <Input
                             value={editingJobs[job._id]?.JobNumber || job.JobNumber}
@@ -517,7 +520,7 @@ const JobsTable = () => {
                       )}
                       {!isEditing && job.JobNumber}
                     </Td>
-                    <Td>
+                    <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
                       {isEditing ? (
                         <Input
                           value={editingJobs[job._id]?.Client || job.Client}
@@ -529,7 +532,7 @@ const JobsTable = () => {
                         job.Client
                       )}
                     </Td>
-                    <Td>
+                    <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
                       {isEditing ? (
                         <Select
                           value={editingJobs[job._id]?.Facility || job.Facility}
@@ -544,7 +547,7 @@ const JobsTable = () => {
                         job.Facility
                       )}
                     </Td>
-                    <Td>
+                    <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
                       {isEditing ? (
                         <Input
                           value={editingJobs[job._id]?.JobValue || job.JobValue}
@@ -556,7 +559,7 @@ const JobsTable = () => {
                         job.JobValue
                       )}
                     </Td>
-                    <Td>
+                    <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
                       {isEditing ? (
                         <Input
                           value={editingJobs[job._id]?.Pieces || job.Pieces}
@@ -568,7 +571,7 @@ const JobsTable = () => {
                         job.Pieces
                       )}
                     </Td>
-                    <Td>
+                    <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
                       {isEditing ? (
                         <Input
                           type="date"
@@ -581,7 +584,7 @@ const JobsTable = () => {
                         new Date(job.RequiredByDate).toLocaleDateString('en-US', { dateStyle: 'long' })
                       )}
                     </Td>
-                    <Td>
+                    <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
                       {isEditing ? (
                         <Input
                           value={editingJobs[job._id]?.Color || job.Color}
@@ -594,7 +597,7 @@ const JobsTable = () => {
                         job.Color
                       )}
                     </Td>
-                    <Td>
+                    <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
                       {isEditing ? (
                         <Select
                           value={editingJobs[job._id]?.TestFit || job.TestFit}
@@ -608,7 +611,7 @@ const JobsTable = () => {
                         job.TestFit
                       )}
                     </Td>
-                    <Td>
+                    <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
                       {isEditing ? (
                         <Select
                           value={editingJobs[job._id]?.Rush || job.Rush}
