@@ -141,37 +141,52 @@ MongoClient.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true
     const upload = multer({ dest: 'uploads/' });
 
     app.post('/upload', upload.single('file'), async (req, res) => {
-      const file = req.file;
-      if (!file) {
-        return res.status(400).send('No file uploaded.');
-      }
+      try {
+        const file = req.file;
+        if (!file) {
+          return res.status(400).send('No file uploaded.');
+        }
 
-      let jobs = [];
-      const filePath = file.path;
+        let jobs = [];
+        const filePath = file.path;
 
-      if (file.mimetype === 'text/csv') {
-        fs.createReadStream(filePath)
-          .pipe(csv())
-          .on('data', (row) => {
-            jobs.push(row);
-          })
-          .on('end', async () => {
-            await saveJobsToDatabase(jobs, db);
-            res.status(200).send('Batch jobs uploaded successfully.');
-          });
-      } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
-        const workbook = XLSX.readFile(filePath);
-        const sheet_name_list = workbook.SheetNames;
-        jobs = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);
-        await saveJobsToDatabase(jobs, db);
-        res.status(200).send('Batch jobs uploaded successfully.');
-      } else {
-        res.status(400).send('Unsupported file format.');
+        if (file.mimetype === 'text/csv') {
+          fs.createReadStream(filePath)
+            .pipe(csv())
+            .on('data', (row) => {
+              jobs.push(row);
+            })
+            .on('end', async () => {
+              const skippedJobs = await saveJobsToDatabase(jobs, db);
+              res.status(200).json({ skippedJobs });
+              cleanupUploads([filePath]);
+            });
+        } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+          const workbook = XLSX.readFile(filePath);
+          const sheet_name_list = workbook.SheetNames;
+          jobs = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);
+          const skippedJobs = await saveJobsToDatabase(jobs, db);
+          res.status(200).json({ skippedJobs });
+          cleanupUploads([filePath]);
+        } else {
+          res.status(400).send('Unsupported file format.');
+          cleanupUploads([filePath]);
+        }
+      } catch (error) {
+        console.error('Error processing file upload:', error);
+        res.status(500).send('Internal Server Error');
       }
     });
 
+    const cleanupUploads = (filePaths) => {
+      filePaths.forEach((filePath) => {
+        fs.unlinkSync(filePath);
+      });
+    };
+
     const saveJobsToDatabase = async (jobs, db) => {
       const collection = db.collection(COLLECTION_NAME);
+      let skippedJobs = [];
 
       jobs = jobs.map(job => ({
         JobNumber: job.JobNumber,
@@ -189,11 +204,14 @@ MongoClient.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true
       for (const job of jobs) {
         const existingJob = await collection.findOne({ JobNumber: job.JobNumber });
         if (existingJob) {
+          skippedJobs.push(job.JobNumber);
           console.log(`Skipping existing job with JobNumber: ${job.JobNumber}`);
         } else {
           await collection.insertOne(job);
         }
       }
+
+      return skippedJobs;
     };
 
     app.get('*', (req, res) => {

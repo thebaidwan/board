@@ -12,6 +12,7 @@ const JobsTable = () => {
   const [editingJobs, setEditingJobs] = useState({});
   const [isFetching, setIsFetching] = useState(false);
   const [hoveredJobId, setHoveredJobId] = useState(null);
+  const [shownToasts, setShownToasts] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const toast = useToast();
 
@@ -251,6 +252,7 @@ const JobsTable = () => {
       }
 
       await fetchJobs();
+      formData.delete('file');
     } catch (error) {
       console.error('Error uploading batch jobs:', error);
       toast({
@@ -477,7 +479,7 @@ const JobsTable = () => {
                     bg={duplicateJobNumbers.includes(job.JobNumber) ? 'red.100' : 'white'}
                     onMouseEnter={() => {
                       setHoveredJobId(job._id);
-                      if (duplicateJobNumbers.includes(job.JobNumber)) {
+                      if (duplicateJobNumbers.includes(job.JobNumber) && !shownToasts.includes(job.JobNumber)) {
                         toast({
                           title: "Duplicate Job Detected",
                           description: `Job Number ${job.JobNumber} has been added more than once.`,
@@ -485,6 +487,7 @@ const JobsTable = () => {
                           duration: 5000,
                           isClosable: true,
                         });
+                        setShownToasts([...shownToasts, job.JobNumber]);
                       }
                     }}
                     onMouseLeave={() => setHoveredJobId(null)}
@@ -496,7 +499,7 @@ const JobsTable = () => {
                             isChecked={selectedJobs.includes(job._id)}
                             onChange={() => handleSelectJob(job._id)}
                             style={{ position: 'relative', marginRight: '10px' }}
-                            borderColor="blue.100"
+                            borderColor="red.100"
                           />
                           <Input
                             value={editingJobs[job._id]?.JobNumber || job.JobNumber}
