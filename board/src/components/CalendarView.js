@@ -22,35 +22,35 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
 
   const dayNames = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
+  const fetchJobs = async () => {
+    try {
+      const res = await axios.get('http://localhost:5000/jobdetails');
+      setJobs(res.data);
+
+      const initialSelectedJobs = {};
+      res.data.forEach(job => {
+        job.Schedule.forEach(date => {
+          if (!initialSelectedJobs[date]) {
+            initialSelectedJobs[date] = [];
+          }
+          initialSelectedJobs[date].push(job);
+        });
+      });
+      setSelectedJobs(initialSelectedJobs);
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+      setJobs([]);
+      toast({
+        title: "Error",
+        description: "Unable to fetch jobs.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
   useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        const res = await axios.get('http://localhost:5000/jobdetails');
-        setJobs(res.data);
-
-        const initialSelectedJobs = {};
-        res.data.forEach(job => {
-          job.Schedule.forEach(date => {
-            if (!initialSelectedJobs[date]) {
-              initialSelectedJobs[date] = [];
-            }
-            initialSelectedJobs[date].push(job);
-          });
-        });
-        setSelectedJobs(initialSelectedJobs);
-      } catch (error) {
-        console.error('Error fetching jobs:', error);
-        setJobs([]);
-        toast({
-          title: "Error",
-          description: "Unable to fetch jobs.",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      }
-    };
-
     fetchJobs();
   }, [toast]);
 
@@ -198,6 +198,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
     setSelectedDate(null);
     setCheckedJobs([]);
     setIsModalOpen(false);
+    fetchJobs(); // Refresh data when modal closes
   };
 
   const handleRowClick = (jobNumber) => {
