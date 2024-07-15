@@ -13,6 +13,7 @@ const JobsTable = () => {
   const [isFetching, setIsFetching] = useState(false);
   const [hoveredJobId, setHoveredJobId] = useState(null);
   const [shownToasts, setShownToasts] = useState([]);
+
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const toast = useToast();
 
@@ -39,7 +40,7 @@ const JobsTable = () => {
   const fetchJobs = async () => {
     setIsFetching(true);
     try {
-      const response = await axios.get('${process.env.REACT_APP_API_URL}/jobdetails');
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/jobdetails`);
       setJobs(response.data);
 
       const pastJobs = getPastJobs(response.data);
