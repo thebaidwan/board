@@ -24,7 +24,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
 
   const fetchJobs = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/jobdetails');
+      const res = await axios.get('${process.env.REACT_APP_API_URL}/jobdetails');
       setJobs(res.data);
 
       const initialSelectedJobs = {};
@@ -234,7 +234,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
       for (let job of jobs) {
         if (job.Schedule.includes(selectedDateString) && !checkedJobs.includes(job.JobNumber)) {
           try {
-            await axios.put(`http://localhost:5000/jobdetails/${job.JobNumber}/remove-from-schedule`, {
+            await axios.put(`${process.env.REACT_APP_API_URL}/jobdetails/${job.JobNumber}/remove-from-schedule`, {
               date: selectedDateString
             });
           } catch (error) {
@@ -254,7 +254,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
         const job = jobs.find(j => j.JobNumber === jobNumber);
         if (job && !job.Schedule.includes(selectedDateString)) {
           try {
-            await axios.put(`http://localhost:5000/jobdetails/${job.JobNumber}/add-to-schedule`, {
+            await axios.put(`${process.env.REACT_APP_API_URL}/jobdetails/${job.JobNumber}/add-to-schedule`, {
               date: selectedDateString
             });
           } catch (error) {

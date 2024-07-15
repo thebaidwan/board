@@ -63,7 +63,7 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
     };
 
     try {
-      const response = await axios.post('http://localhost:5000/jobdetails', newJob);
+      const response = await axios.post('${process.env.REACT_APP_API_URL}/jobdetails', newJob);
       fetchJobs();
       onClose();
       toast({

@@ -39,7 +39,7 @@ const JobsTable = () => {
   const fetchJobs = async () => {
     setIsFetching(true);
     try {
-      const response = await axios.get('http://localhost:5000/jobdetails');
+      const response = await axios.get('${process.env.REACT_APP_API_URL}/jobdetails');
       setJobs(response.data);
 
       const pastJobs = getPastJobs(response.data);
@@ -98,7 +98,7 @@ const JobsTable = () => {
   const handleDeleteJobs = async () => {
     try {
       await Promise.all(selectedJobs.map((jobId) => {
-        return axios.delete(`http://localhost:5000/jobdetails/${jobId}`);
+        return axios.delete(`${process.env.REACT_APP_API_URL}/jobdetails/${jobId}`);
       }));
       await fetchJobs();
       setSelectedJobs([]);
@@ -136,7 +136,7 @@ const JobsTable = () => {
       await Promise.all(
         Object.keys(editingJobs).map((jobId) => {
           const updatedJob = editingJobs[jobId];
-          return axios.put(`http://localhost:5000/jobdetails/${jobId}`, updatedJob);
+          return axios.put(`${process.env.REACT_APP_API_URL}/jobdetails/${jobId}`, updatedJob);
         })
       );
       await fetchJobs();
@@ -181,7 +181,7 @@ const JobsTable = () => {
 
   const deletePastJobs = async (pastJobs) => {
     try {
-      await Promise.all(pastJobs.map(job => axios.delete(`http://localhost:5000/jobdetails/${job._id}`)));
+      await Promise.all(pastJobs.map(job => axios.delete(`${process.env.REACT_APP_API_URL}/jobdetails/${job._id}`)));
       toast({
         title: 'Past Jobs Deleted',
         description: 'All past jobs have been deleted successfully.',
@@ -225,7 +225,7 @@ const JobsTable = () => {
     formData.append('file', file);
 
     try {
-      const response = await axios.post('http://localhost:5000/upload', formData, {
+      const response = await axios.post('${process.env.REACT_APP_API_URL}/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
