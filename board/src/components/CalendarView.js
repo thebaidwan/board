@@ -295,26 +295,28 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
           <ModalContent>
             <ModalHeader>Select Jobs for {selectedDate ? selectedDate.toDateString() : ''}</ModalHeader>
             <ModalBody>
-              <Table>
-                <Thead>
-                  <Tr>
-                    <Th>Job Number</Th>
-                    <Th>Client</Th>
-                    <Th>Job Value</Th>
-                    <Th>Facility</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {jobs.map(job => (
-                    <Tr key={job.JobNumber} onClick={() => handleRowClick(job.JobNumber)} style={{ cursor: 'pointer', backgroundColor: checkedJobs.includes(job.JobNumber) ? '#EDF2F7' : 'transparent' }}>
-                      <Td>{job.JobNumber}</Td>
-                      <Td>{job.Client}</Td>
-                      <Td>{job.JobValue}</Td>
-                      <Td>{job.Facility}</Td>
+              <Box maxHeight="650px" overflowY="auto">
+                <Table>
+                  <Thead>
+                    <Tr>
+                      <Th>Job Number</Th>
+                      <Th>Client</Th>
+                      <Th>Job Value</Th>
+                      <Th>Facility</Th>
                     </Tr>
-                  ))}
-                </Tbody>
-              </Table>
+                  </Thead>
+                  <Tbody>
+                    {jobs.map(job => (
+                      <Tr key={job.JobNumber} onClick={() => handleRowClick(job.JobNumber)} style={{ cursor: 'pointer', backgroundColor: checkedJobs.includes(job.JobNumber) ? '#EDF2F7' : 'transparent' }}>
+                        <Td>{job.JobNumber}</Td>
+                        <Td>{job.Client}</Td>
+                        <Td>{job.JobValue}</Td>
+                        <Td>{job.Facility}</Td>
+                      </Tr>
+                    ))}
+                  </Tbody>
+                </Table>
+              </Box>
               <Text fontSize="lg" mt="30px" color={totalJobValue < 15000 ? "red" : "green"}>
                 Total Value: ${totalJobValue.toFixed(2)}
               </Text>
