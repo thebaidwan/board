@@ -45,7 +45,7 @@ const JobsTable = () => {
 
       const pastJobs = getPastJobs(response.data);
       if (pastJobs.length > 0 && !isDismissedWithinOneDay()) {
-        const confirmed = window.confirm("It is recommended to delete the jobs that have been installed from Board. Do you want to do it now? (Your choice will be remembered for one day)");
+        const confirmed = window.confirm("It is advised to delete jobs that were installed more than two weeks ago from the Board. If you choose not to proceed now, you will be reminded again tomorrow. Would you like to proceed?");
         if (confirmed) {
           await deletePastJobs(pastJobs);
         } else {
@@ -163,9 +163,12 @@ const JobsTable = () => {
   };
 
   const getPastJobs = (jobs) => {
-    const currentDate = new Date().toISOString().split('T')[0];
+    const twoWeeksAgo = new Date();
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+    const formattedTwoWeeksAgo = twoWeeksAgo.toISOString().split('T')[0];
+
     return jobs.filter(job =>
-      job.Schedule.length > 0 && job.Schedule.every(scheduleDate => new Date(scheduleDate) < new Date(currentDate))
+      job.Schedule.length > 0 && job.Schedule.every(scheduleDate => new Date(scheduleDate) < new Date(formattedTwoWeeksAgo))
     );
   };
 
