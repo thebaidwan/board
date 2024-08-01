@@ -164,7 +164,7 @@ const App = () => {
         <Box w="100%" bg="white" p={2} mb={8} boxShadow="none">
           <Flex justifyContent="space-between" alignItems="left" w="95%">
             <Box flex="1" ml={view === 'calendar' ? '0' : '192'} mt={view === 'calendar' ? '1' : '5'}>
-              <Heading as="h1" color="blue.700" fontWeight="500" textAlign="left">
+              <Heading as="h1" color="#2B6CB0" fontWeight="500" textAlign="left">
                 {view === 'calendar' ? (
                   <Flex align="center">
                     <Text>

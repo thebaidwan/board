@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box, Grid, Text, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody,
-  Table, Thead, Tbody, Tr, Th, Td, Flex, Tooltip, useToast, ChakraProvider
+  Table, Thead, Tbody, Tr, Th, Td, Flex, Tooltip, useToast, ChakraProvider, IconButton
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
+import { Info } from 'react-feather';
 import axios from 'axios';
 
 const MotionBox = motion(Box);
@@ -16,6 +17,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
   const [jobs, setJobs] = useState([]);
   const [selectedJobs, setSelectedJobs] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTooltipVisible, setIsTooltipVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [checkedJobs, setCheckedJobs] = useState([]);
   const [totalJobValue, setTotalJobValue] = useState(0);
@@ -198,7 +200,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
     setSelectedDate(null);
     setCheckedJobs([]);
     setIsModalOpen(false);
-    fetchJobs(); // Refresh data when modal closes
+    fetchJobs();
   };
 
   const handleRowClick = (jobNumber) => {
@@ -290,10 +292,38 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
         {days}
       </Grid>
       <Box m={5}>
-        <Modal isOpen={isModalOpen} onClose={handleCloseModal} size="5xl">
+        <Modal isOpen={isModalOpen} onClose={handleCloseModal} size="6xl">
           <ModalOverlay />
           <ModalContent>
-            <ModalHeader>Select Jobs for {selectedDate ? selectedDate.toDateString() : ''}</ModalHeader>
+            <ModalHeader>Select Jobs for {selectedDate ? selectedDate.toDateString() : ''}
+              <Tooltip
+                label={
+                  <Box>
+                    <Text>• Single-click to schedule an installation.</Text>
+                    <Text>• Double-click to schedule a test fit.</Text>
+                    <Text>• Scheduling a test fit does not add the job value to the total value for a given day.</Text>
+                    <Text>• Jobs scheduled for at least one day appear lighter but are still selectable.</Text>
+                    <Text>• Multiple jobs can be selected.</Text>
+                    <Text>• The monetary value of a job is evenly divided across all dates it is scheduled for.</Text>
+                  </Box>
+                }
+                fontSize="md"
+                fontWeight="400"
+                placement="bottom"
+                isOpen={isTooltipVisible}
+              >
+                <IconButton
+                  aria-label="Information"
+                  icon={<Info size={16} />}
+                  variant="ghost"
+                  size="sm"
+                  ml={2}
+                  color="gray.500"
+                  onMouseEnter={() => setIsTooltipVisible(true)}
+                  onMouseLeave={() => setIsTooltipVisible(false)}
+                />
+              </Tooltip>
+            </ModalHeader>
             <ModalBody>
               <Box maxHeight="650px" overflowY="auto">
                 <Table>
@@ -303,15 +333,27 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
                       <Th>Client</Th>
                       <Th>Job Value</Th>
                       <Th>Facility</Th>
+                      <Th>Test Fit</Th>
+                      <Th>Rush</Th>
                     </Tr>
                   </Thead>
                   <Tbody>
                     {jobs.map(job => (
-                      <Tr key={job.JobNumber} onClick={() => handleRowClick(job.JobNumber)} style={{ cursor: 'pointer', backgroundColor: checkedJobs.includes(job.JobNumber) ? '#EDF2F7' : 'transparent' }}>
+                      <Tr
+                        key={job.JobNumber}
+                        onClick={() => handleRowClick(job.JobNumber)}
+                        style={{
+                          cursor: 'pointer',
+                          backgroundColor: checkedJobs.includes(job.JobNumber) ? '#EDF2F7' : (job.TestFitDate ? '#F9F2FF' : 'transparent'),
+                          color: job.Schedule.length > 0 ? '#5A6F77' : 'inherit'
+                        }}
+                      >
                         <Td>{job.JobNumber}</Td>
                         <Td>{job.Client}</Td>
                         <Td>{job.JobValue}</Td>
                         <Td>{job.Facility}</Td>
+                        <Td>{job.TestFit}</Td>
+                        <Td>{job.Rush}</Td>
                       </Tr>
                     ))}
                   </Tbody>

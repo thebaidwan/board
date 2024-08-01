@@ -15,16 +15,16 @@
   border-radius: 4px;
   cursor: pointer;
   text-decoration: none;
-  color: #90CDF4;
+  color: #2B6CB0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .pagination-active .page-link {
-  background-color: #90CDF4;
+  background-color: #2B6CB0;
   color: white;
-  border-color: #90CDF4;
+  border-color: #2B6CB0;
 }
 
 .pagination-disabled .page-link {

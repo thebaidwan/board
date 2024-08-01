@@ -16,7 +16,7 @@ const JobsTable = () => {
   const [hoveredJobId, setHoveredJobId] = useState(null);
   const [shownToasts, setShownToasts] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
-  const [jobsPerPage] = useState(20);
+  const [jobsPerPage] = useState(21);
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const toast = useToast();
@@ -324,7 +324,7 @@ const JobsTable = () => {
             style={{ display: 'none' }}
             id="file-upload"
           />
-          <Tooltip label="Upload multiple jobs from a CSV, XLS, or XLSX file. Ensure your file matches the format of the table on the screen, with an empty 'Schedule' column in the end.">
+          <Tooltip label="Upload multiple jobs from a CSV, XLS, or XLSX file. Ensure your file matches the table format shown on screen.">
             <Button
               leftIcon={<Box as={Plus} size="18px" />}
               onClick={() => document.getElementById('file-upload').click()}
@@ -508,7 +508,7 @@ const JobsTable = () => {
                       }}
                       onMouseLeave={() => setHoveredJobId(null)}
                     >
-                      <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
+                      <Td style={{ color: job.Schedule.length > 0 ? '#5A6F77' : 'inherit' }}>
                         {isEditing && (
                           <Flex alignItems="center">
                             <Checkbox
@@ -539,7 +539,7 @@ const JobsTable = () => {
                         )}
                         {!isEditing && job.JobNumber}
                       </Td>
-                      <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
+                      <Td style={{ color: job.Schedule.length > 0 ? '#5A6F77' : 'inherit' }}>
                         {isEditing ? (
                           <Input
                             value={editingJobs[job._id]?.Client || job.Client}
@@ -551,7 +551,7 @@ const JobsTable = () => {
                           job.Client
                         )}
                       </Td>
-                      <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
+                      <Td style={{ color: job.Schedule.length > 0 ? '#5A6F77' : 'inherit' }}>
                         {isEditing ? (
                           <Select
                             value={editingJobs[job._id]?.Facility || job.Facility}
@@ -566,7 +566,7 @@ const JobsTable = () => {
                           job.Facility
                         )}
                       </Td>
-                      <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
+                      <Td style={{ color: job.Schedule.length > 0 ? '#5A6F77' : 'inherit' }}>
                         {isEditing ? (
                           <Input
                             value={editingJobs[job._id]?.JobValue || job.JobValue}
@@ -578,7 +578,7 @@ const JobsTable = () => {
                           job.JobValue
                         )}
                       </Td>
-                      <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
+                      <Td style={{ color: job.Schedule.length > 0 ? '#5A6F77' : 'inherit' }}>
                         {isEditing ? (
                           <Input
                             value={editingJobs[job._id]?.Pieces || job.Pieces}
@@ -590,7 +590,7 @@ const JobsTable = () => {
                           job.Pieces
                         )}
                       </Td>
-                      <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
+                      <Td style={{ color: job.Schedule.length > 0 ? '#5A6F77' : 'inherit' }}>
                         {isEditing ? (
                           <Input
                             type="date"
@@ -603,7 +603,7 @@ const JobsTable = () => {
                           new Date(job.RequiredByDate).toLocaleDateString('en-US', { dateStyle: 'long' })
                         )}
                       </Td>
-                      <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
+                      <Td style={{ color: job.Schedule.length > 0 ? '#5A6F77' : 'inherit' }}>
                         {isEditing ? (
                           <Input
                             value={editingJobs[job._id]?.Color || job.Color}
@@ -616,7 +616,7 @@ const JobsTable = () => {
                           job.Color
                         )}
                       </Td>
-                      <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
+                      <Td style={{ color: job.Schedule.length > 0 ? '#5A6F77' : 'inherit' }}>
                         {isEditing ? (
                           <Select
                             value={editingJobs[job._id]?.TestFit || job.TestFit}
@@ -630,7 +630,7 @@ const JobsTable = () => {
                           job.TestFit
                         )}
                       </Td>
-                      <Td style={{ color: job.Schedule.length > 0 ? '#8A9BA8' : 'inherit' }}>
+                      <Td style={{ color: job.Schedule.length > 0 ? '#5A6F77' : 'inherit' }}>
                         {isEditing ? (
                           <Select
                             value={editingJobs[job._id]?.Rush || job.Rush}
