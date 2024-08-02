@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Table, Thead, Tbody, Tr, Th, Td, Button, Flex, Checkbox, IconButton, Input, Select, Spinner, Tooltip, useToast, ChakraProvider } from '@chakra-ui/react';
-import { Plus, Trash2, Edit, X, Save, RefreshCw, ChevronDown, ChevronUp } from 'react-feather';
+import { Plus, Trash2, Edit, X, Save, RefreshCw, ChevronDown, ChevronUp, Search } from 'react-feather';
 import axios from 'axios';
 import JobForm from './JobForm';
 import ReactPaginate from 'react-paginate';
@@ -16,7 +16,8 @@ const JobsTable = () => {
   const [hoveredJobId, setHoveredJobId] = useState(null);
   const [shownToasts, setShownToasts] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
-  const [jobsPerPage] = useState(21);
+  const [jobsPerPage] = useState(20);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const toast = useToast();
@@ -28,7 +29,11 @@ const JobsTable = () => {
 
   const renderTooltip = (job) => {
     if (job.Schedule && job.Schedule.length > 0) {
-      return `Scheduled for ${job.Schedule.map(date => formatDateForTooltip(date)).join(', ')}`;
+      const scheduleText = job.Schedule.map(date => {
+        const formattedDate = formatDateForTooltip(date);
+        return date.includes('(Test Fit)') ? `${formattedDate} (Test Fit)` : formattedDate;
+      }).join(', ');
+      return `Scheduled for ${scheduleText}`;
     } else {
       return "Not scheduled";
     }
@@ -296,45 +301,82 @@ const JobsTable = () => {
   };
 
   const offset = currentPage * jobsPerPage;
-  const currentJobs = sortedJobs.slice(offset, offset + jobsPerPage);
+  const filteredJobs = sortedJobs.filter(job =>
+    Object.values(job).some(value =>
+      String(value).toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
+  const currentJobs = filteredJobs.slice(offset, offset + jobsPerPage);
 
   return (
     <ChakraProvider>
       <Box w="80%" m="auto" mt="5">
-        <Flex mb="5" justifyContent="flex-end">
-          <Tooltip label="Refresh Table" aria-label="Refresh Table">
-            <Box
-              width="30px"
-              height="30px"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              cursor="pointer"
-              onClick={fetchJobs}
-              mr={3}
-              mt={1}
-            >
-              <RefreshCw size={24} />
+        <Flex mb="5" justifyContent="space-between">
+          <Box position="relative" width="300px" mb="4">
+            <Box position="absolute" left="10px" top="50%" transform="translateY(-50%)">
+              <Search size={18} color="gray" />
             </Box>
-          </Tooltip>
-          <Input
-            type="file"
-            accept=".csv, .xls, .xlsx"
-            onChange={handleBatchUpload}
-            style={{ display: 'none' }}
-            id="file-upload"
-          />
-          <Tooltip label="Upload multiple jobs from a CSV, XLS, or XLSX file. Ensure your file matches the table format shown on screen.">
+            <Input
+              placeholder="Search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              pl="35px"
+            />
+          </Box>
+          <Flex justifyContent="flex-end">
+            <Tooltip label="Refresh Table" aria-label="Refresh Table">
+              <Box
+                width="30px"
+                height="30px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                cursor="pointer"
+                onClick={fetchJobs}
+                mr={3}
+                mt={1}
+              >
+                <RefreshCw size={24} />
+              </Box>
+            </Tooltip>
+            <Input
+              type="file"
+              accept=".csv, .xls, .xlsx"
+              onChange={handleBatchUpload}
+              style={{ display: 'none' }}
+              id="file-upload"
+            />
+            <Tooltip label="Upload multiple jobs from a CSV, XLS, or XLSX file. Ensure your file matches the table format shown on screen.">
+              <Button
+                leftIcon={<Box as={Plus} size="18px" />}
+                onClick={() => document.getElementById('file-upload').click()}
+                variant="outline"
+                _hover={{ bg: "gray.200" }}
+                _active={{ bg: "gray.300" }}
+                borderRadius="4px"
+                fontSize="18px"
+                height="36px"
+                width="200px"
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                pr="12px"
+                pt="2px"
+                mr="2"
+              >
+                Batch Upload Jobs
+              </Button>
+            </Tooltip>
             <Button
               leftIcon={<Box as={Plus} size="18px" />}
-              onClick={() => document.getElementById('file-upload').click()}
+              onClick={handleAddJob}
               variant="outline"
               _hover={{ bg: "gray.200" }}
               _active={{ bg: "gray.300" }}
               borderRadius="4px"
               fontSize="18px"
               height="36px"
-              width="200px"
+              width="120px"
               display="flex"
               justifyContent="center"
               alignItems="center"
@@ -342,82 +384,63 @@ const JobsTable = () => {
               pt="2px"
               mr="2"
             >
-              Batch Upload Jobs
+              Add Job
             </Button>
-          </Tooltip>
-          <Button
-            leftIcon={<Box as={Plus} size="18px" />}
-            onClick={handleAddJob}
-            variant="outline"
-            _hover={{ bg: "gray.200" }}
-            _active={{ bg: "gray.300" }}
-            borderRadius="4px"
-            fontSize="18px"
-            height="36px"
-            width="120px"
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            pr="12px"
-            pt="2px"
-            mr="2"
-          >
-            Add Job
-          </Button>
-          <Button
-            leftIcon={<Box as={isEditing ? X : Edit} size="18px" />}
-            onClick={handleEditToggle}
-            variant="outline"
-            _hover={{ bg: "gray.200" }}
-            _active={{ bg: "gray.300" }}
-            borderRadius="4px"
-            fontSize="18px"
-            height="36px"
-            width="120px"
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            pr="12px"
-            pt="2px"
-          >
-            {isEditing ? 'Cancel' : 'Edit'}
-          </Button>
-          {isEditing && (
-            <>
-              {selectedJobs.length > 0 && (
-                <IconButton
-                  icon={<Trash2 size="18px" />}
-                  onClick={handleDeleteJobs}
+            <Button
+              leftIcon={<Box as={isEditing ? X : Edit} size="18px" />}
+              onClick={handleEditToggle}
+              variant="outline"
+              _hover={{ bg: "gray.200" }}
+              _active={{ bg: "gray.300" }}
+              borderRadius="4px"
+              fontSize="18px"
+              height="36px"
+              width="120px"
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              pr="12px"
+              pt="2px"
+            >
+              {isEditing ? 'Cancel' : 'Edit'}
+            </Button>
+            {isEditing && (
+              <>
+                {selectedJobs.length > 0 && (
+                  <IconButton
+                    icon={<Trash2 size="18px" />}
+                    onClick={handleDeleteJobs}
+                    variant="outline"
+                    colorScheme="red"
+                    borderRadius="4px"
+                    fontSize="18px"
+                    height="36px"
+                    width="36px"
+                    display="flex"
+                    justifyContent="center"
+                    alignItems="center"
+                    ml="2"
+                  />
+                )}
+                <Button
+                  leftIcon={<Box as={Save} size="18px" />}
+                  onClick={handleSaveEdits}
                   variant="outline"
-                  colorScheme="red"
+                  colorScheme="green"
                   borderRadius="4px"
                   fontSize="18px"
                   height="36px"
-                  width="36px"
+                  width="120px"
                   display="flex"
                   justifyContent="center"
                   alignItems="center"
                   ml="2"
-                />
-              )}
-              <Button
-                leftIcon={<Box as={Save} size="18px" />}
-                onClick={handleSaveEdits}
-                variant="outline"
-                colorScheme="green"
-                borderRadius="4px"
-                fontSize="18px"
-                height="36px"
-                width="120px"
-                display="flex"
-                justifyContent="center"
-                alignItems="center"
-                ml="2"
-              >
-                Save
-              </Button>
-            </>
-          )}
+                >
+                  Save
+                </Button>
+              </>
+            )}
+          </Flex>
         </Flex>
         {isFetching ? (
           <Spinner
@@ -429,7 +452,7 @@ const JobsTable = () => {
           />
         ) : (
           <Box pb="2">
-            <Table variant="striped" colorScheme="gray" size="sm" border="1px" borderColor="gray.200" borderRadius="md">
+            <Table variant="striped" colorScheme="gray" size="sm" border="1px" borderColor="gray.100" borderRadius="md">
               <Thead>
                 <Tr>
                   <Th onClick={() => handleSort('JobNumber')}>
@@ -490,7 +513,7 @@ const JobsTable = () => {
               </Thead>
               <Tbody>
                 {currentJobs.map((job) => (
-                  <Tooltip key={job._id} label={renderTooltip(job)} placement="left" hasArrow>
+                  <Tooltip key={job._id} label={renderTooltip(job)} placement="left" hasArrow maxWidth="160px">
                     <Tr
                       bg={duplicateJobNumbers.includes(job.JobNumber) ? 'red.100' : 'white'}
                       onMouseEnter={() => {
@@ -515,7 +538,7 @@ const JobsTable = () => {
                               isChecked={selectedJobs.includes(job._id)}
                               onChange={() => handleSelectJob(job._id)}
                               style={{ position: 'relative', marginRight: '10px' }}
-                              borderColor="red.100"
+                              borderColor="blue.100"
                             />
                             <Input
                               value={editingJobs[job._id]?.JobNumber || job.JobNumber}
@@ -575,7 +598,7 @@ const JobsTable = () => {
                             borderColor={isEditing ? "gray.200" : "gray.200"}
                           />
                         ) : (
-                          job.JobValue
+                          `$${job.JobValue}`
                         )}
                       </Td>
                       <Td style={{ color: job.Schedule.length > 0 ? '#5A6F77' : 'inherit' }}>
@@ -654,7 +677,7 @@ const JobsTable = () => {
               nextLabel={'Next'}
               breakLabel={'...'}
               breakClassName={'break-me'}
-              pageCount={Math.ceil(jobs.length / jobsPerPage)}
+              pageCount={Math.ceil(filteredJobs.length / jobsPerPage)}
               marginPagesDisplayed={2}
               pageRangeDisplayed={5}
               onPageChange={handlePageClick}

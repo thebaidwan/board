@@ -20,7 +20,9 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [checkedJobs, setCheckedJobs] = useState([]);
+  const [modalKey, setModalKey] = useState(0);
   const [totalJobValue, setTotalJobValue] = useState(0);
+  const [doubleClickedJob, setDoubleClickedJob] = useState(null);
 
   const dayNames = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
@@ -111,9 +113,13 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
       }
     };
 
-    const jobsForDay = selectedJobs[dayDate.toDateString()] || [];
+    const dayString = dayDate.toDateString();
+    const jobsForDay = selectedJobs[dayString] || [];
+    const jobsWithTestFits = jobs.filter(job => job.Schedule.includes(`${dayString} (Test Fit)`));
+    const allJobsForDay = [...jobsForDay, ...jobsWithTestFits];
+
     const totalJobValue = jobsForDay.reduce((sum, job) => {
-      const numDates = job.Schedule.length;
+      const numDates = job.Schedule.filter(date => !date.includes('(Test Fit)')).length;
       return sum + (job.JobValue / (numDates > 0 ? numDates : 1));
     }, 0);
 
@@ -138,7 +144,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
         paddingTop={0}
         position="relative"
       >
-        <Text fontSize='22px' fontWeight={isToday ? '500' : 'normal'} color={isToday ? 'blue.500' : (isWeekend ? 'gray.400' : 'inherit')}>
+        <Text fontSize='22px' fontWeight={isToday ? '500' : 'normal'} color={isToday ? '#2B6CB0' : (isWeekend ? 'gray.400' : 'inherit')}>
           {dayDate.toLocaleString('default', { month: 'short' })} {dayDate.getDate()}
         </Text>
         <Text
@@ -151,10 +157,18 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
         >
           ${totalJobValue.toFixed(2)}
         </Text>
-        {jobsForDay.length > 0 && (
+        {allJobsForDay.length > 0 && (
           <Box mt={2}>
-            {jobsForDay.map(job => (
-              <Box key={job.JobNumber} border="1px solid" borderRadius="md" p={2} mb={2} bg="gray.100" borderColor="gray.100">
+            {allJobsForDay.map(job => (
+              <Box
+                key={job.JobNumber}
+                border="1px solid"
+                borderRadius="md"
+                p={2}
+                mb={2}
+                bg={job.Schedule.some(date => date.includes('(Test Fit)') && new Date(date).toDateString() === new Date(dayString).toDateString()) ? '#E6E6FA' : 'gray.100'}
+                borderColor="gray.100"
+              >
                 <Flex justifyContent="space-between" alignItems="center">
                   <Box display="flex" alignItems="center">
                     <Text fontWeight="bold" fontSize="14px" color="blue.800">{job.JobNumber}</Text>
@@ -162,8 +176,9 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
                       <Box w="8px" h="8px" borderRadius="full" bg={facilityColor(job.Facility).color} ml={1}></Box>
                     </Tooltip>
                     {job.TestFit === 'yes' && (
-                      <Tooltip label="Requires Test Fit" fontSize="md">
-                        <Box w="8px" h="8px" borderRadius="full" bg='purple.500' ml={1}></Box>
+                      <Tooltip label={job.Schedule.some(date => date.includes('(Test Fit)')) ? "Test Fit Scheduled" : "Requires Test Fit"} fontSize="md">
+                        <Box w="8px" h="8px" borderRadius="full" bg={job.Schedule.some(date => date.includes('(Test Fit)')) ? 'purple.500' : 'purple.500'} position="relative" ml={1}>
+                        </Box>
                       </Tooltip>
                     )}
                     {job.Rush === 'yes' && (
@@ -203,12 +218,98 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
     fetchJobs();
   };
 
+  let clickTimeout = null;
+
   const handleRowClick = (jobNumber) => {
-    if (checkedJobs.includes(jobNumber)) {
-      setCheckedJobs(checkedJobs.filter(job => job !== jobNumber));
+    const job = jobs.find(j => j.JobNumber === jobNumber);
+    const selectedDateString = selectedDate.toDateString();
+    const testFitDate = `${selectedDateString} (Test Fit)`;
+
+    if (job.Schedule.includes(selectedDateString)) {
+      job.Schedule = job.Schedule.filter(date => date !== selectedDateString);
+      axios.put(`${process.env.REACT_APP_API_URL}/jobdetails/${job.JobNumber}/remove-from-schedule`, {
+        date: selectedDateString
+      });
+      setCheckedJobs(checkedJobs.filter(jobNum => jobNum !== jobNumber));
+      toast({
+        title: "Job Unscheduled",
+        description: `Job ${job.JobNumber} has been unscheduled.`,
+        status: "info",
+        duration: 5000,
+        isClosable: true,
+      });
+    } else if (job.Schedule.includes(testFitDate)) {
+      job.Schedule = job.Schedule.filter(date => date !== testFitDate);
+      axios.put(`${process.env.REACT_APP_API_URL}/jobdetails/${job.JobNumber}/remove-from-schedule`, {
+        date: testFitDate
+      });
+      setCheckedJobs(checkedJobs.filter(jobNum => jobNum !== jobNumber));
+      toast({
+        title: "Test Fit Unscheduled",
+        description: `Test fit for job ${job.JobNumber} has been unscheduled.`,
+        status: "info",
+        duration: 5000,
+        isClosable: true,
+      });
     } else {
       setCheckedJobs([...checkedJobs, jobNumber]);
+      job.Schedule.push(selectedDateString);
+      axios.put(`${process.env.REACT_APP_API_URL}/jobdetails/${job.JobNumber}/add-to-schedule`, {
+        date: selectedDateString
+      });
+      toast({
+        title: "Job Scheduled",
+        description: `Job ${job.JobNumber} has been scheduled.`,
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
     }
+  };
+
+  const handleRowDoubleClick = (jobNumber) => {
+    clearTimeout(clickTimeout);
+    const job = jobs.find(j => j.JobNumber === jobNumber);
+    const selectedDateString = selectedDate.toDateString();
+    const testFitDate = `${selectedDateString} (Test Fit)`;
+
+    if (job.TestFit === 'yes') {
+      if (!job.Schedule.includes(testFitDate) && !job.Schedule.includes(selectedDateString)) {
+        job.Schedule.push(testFitDate);
+        axios.put(`${process.env.REACT_APP_API_URL}/jobdetails/${job.JobNumber}/add-to-schedule`, {
+          date: testFitDate
+        });
+        toast({
+          title: "Test Fit Scheduled",
+          description: `Test fit for job ${job.JobNumber} has been scheduled.`,
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+        });
+        setDoubleClickedJob(jobNumber);
+      }
+    } else {
+      toast({
+        title: "Test Fit Not Required",
+        description: `Job ${job.JobNumber} does not require a test fit.`,
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (doubleClickedJob !== null) {
+      setDoubleClickedJob(null);
+    }
+  }, [doubleClickedJob]);
+
+  const handleSingleClick = (jobNumber) => {
+    clearTimeout(clickTimeout);
+    clickTimeout = setTimeout(() => {
+      handleRowClick(jobNumber);
+    }, 300);
   };
 
   useEffect(() => {
@@ -216,7 +317,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
       const selectedDateString = selectedDate.toDateString();
       const jobsForDay = checkedJobs.map(jobNumber => jobs.find(job => job.JobNumber === jobNumber));
       const totalValue = jobsForDay.reduce((sum, job) => {
-        const numDates = job.Schedule.includes(selectedDateString) ? job.Schedule.length : job.Schedule.length + 1;
+        const numDates = job.Schedule.filter(date => !date.includes('(Test Fit)')).length;
         return sum + (job.JobValue / (numDates > 0 ? numDates : 1));
       }, 0);
       setTotalJobValue(totalValue);
@@ -259,6 +360,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
             await axios.put(`${process.env.REACT_APP_API_URL}/jobdetails/${job.JobNumber}/add-to-schedule`, {
               date: selectedDateString
             });
+            setCheckedJobs([...checkedJobs]);
           } catch (error) {
             console.error(`Error updating schedule for job ${jobNumber}:`, error);
             toast({
@@ -280,6 +382,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
       setTotalJobValue(totalValue);
     }
 
+    setModalKey(prevKey => prevKey + 1);
     handleCloseModal();
   };
 
@@ -292,7 +395,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
         {days}
       </Grid>
       <Box m={5}>
-        <Modal isOpen={isModalOpen} onClose={handleCloseModal} size="6xl">
+        <Modal key={modalKey} isOpen={isModalOpen} onClose={handleCloseModal} size="6xl">
           <ModalOverlay />
           <ModalContent>
             <ModalHeader>Select Jobs for {selectedDate ? selectedDate.toDateString() : ''}
@@ -341,16 +444,23 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
                     {jobs.map(job => (
                       <Tr
                         key={job.JobNumber}
-                        onClick={() => handleRowClick(job.JobNumber)}
+                        onClick={() => handleSingleClick(job.JobNumber)}
+                        onDoubleClick={() => handleRowDoubleClick(job.JobNumber)}
                         style={{
                           cursor: 'pointer',
-                          backgroundColor: checkedJobs.includes(job.JobNumber) ? '#EDF2F7' : (job.TestFitDate ? '#F9F2FF' : 'transparent'),
+                          backgroundColor: job.Schedule.some(date =>
+                            date.includes('(Test Fit)') && selectedDate && new Date(date).toDateString() === selectedDate.toDateString()
+                          ) ? '#E6E6FA' : (
+                            job.Schedule.some(date =>
+                              selectedDate && new Date(date).toDateString() === selectedDate.toDateString()
+                            ) ? '#EDF2F7' : 'transparent'
+                          ),
                           color: job.Schedule.length > 0 ? '#5A6F77' : 'inherit'
                         }}
                       >
                         <Td>{job.JobNumber}</Td>
                         <Td>{job.Client}</Td>
-                        <Td>{job.JobValue}</Td>
+                        <Td>${job.JobValue}</Td>
                         <Td>{job.Facility}</Td>
                         <Td>{job.TestFit}</Td>
                         <Td>{job.Rush}</Td>
@@ -364,8 +474,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
               </Text>
             </ModalBody>
             <ModalFooter>
-              <Button colorScheme="blue" onClick={handleConfirmSelection} mr={3}>Confirm</Button>
-              <Button variant="ghost" onClick={handleCloseModal}>Cancel</Button>
+              <Button colorScheme="blue" onClick={handleConfirmSelection} mr={3}>Done</Button>
             </ModalFooter>
           </ModalContent>
         </Modal>
