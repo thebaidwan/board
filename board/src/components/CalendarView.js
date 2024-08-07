@@ -187,7 +187,9 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
                       </Tooltip>
                     )}
                   </Box>
-                  <Text fontSize="14px" color="blue.800">${job.JobValue}</Text>
+                  <Text fontSize="14px" color={job.JobValue > 0 ? "blue.800" : "green.500"} fontWeight="400">
+                    {job.JobValue > 0 ? `$${job.JobValue}` : 'SERVICE'}
+                  </Text>
                 </Flex>
                 <Text fontSize="14px" color="blue.800">{job.Client}</Text>
                 <Text fontSize="14px" color="blue.800">{job.Color}</Text>
@@ -199,7 +201,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
             ))}
           </Box>
         )}
-        <Button mt={2} onClick={() => handleOpenModal(dayDate)}>Add Jobs</Button>
+        <Button mt={2} onClick={() => handleOpenModal(dayDate)}>+ Add Jobs</Button>
       </MotionBox>
     );
   }
@@ -460,7 +462,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
                       >
                         <Td>{job.JobNumber}</Td>
                         <Td>{job.Client}</Td>
-                        <Td>${job.JobValue}</Td>
+                        <Td>{job.JobValue > 0 ? `$${job.JobValue}` : 'SERVICE'}</Td>
                         <Td>{job.Facility}</Td>
                         <Td>{job.TestFit}</Td>
                         <Td>{job.Rush}</Td>
