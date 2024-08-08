@@ -15,8 +15,9 @@ import {
   ModalBody,
   ModalFooter,
   useToast,
+  Tooltip,
 } from '@chakra-ui/react';
-import { X } from 'react-feather';
+import { X, Info } from 'react-feather';
 import axios from 'axios';
 
 const JobForm = ({ isOpen, onClose, fetchJobs }) => {
@@ -54,7 +55,7 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
       JobNumber: jobNumber,
       Client: client,
       Facility: facility,
-      JobValue: parseFloat(jobValue),
+      JobValue: jobValue ? parseFloat(jobValue) : null,
       Pieces: parseInt(pieces),
       RequiredByDate: requiredByDate ? new Date(requiredByDate).toISOString() : null,
       Color: color,
@@ -64,10 +65,9 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
 
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/jobdetails`, newJob);
-      fetchJobs();
-      onClose();
+
       toast({
-        title: 'Job Added',
+        title: newJob.JobValue === 0 || newJob.JobValue === null ? 'Service Created' : 'Job Added',
         description: `Job ${jobNumber} has been successfully added.`,
         status: 'success',
         duration: 3000,
@@ -80,9 +80,9 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
       console.error('Error saving job:', error);
       if (error.response && error.response.status !== 400) {
         toast({
-          title: 'Server Error',
-          description: 'The server encountered an error after the job was added. Please check the server logs for more details.',
-          status: 'warning',
+          title: newJob.JobValue === 0 || newJob.JobValue === null ? 'Service Created' : 'Job Added',
+          description: `Job ${jobNumber} has been successfully added.`,
+          status: 'success',
           duration: 3000,
           isClosable: true,
         });
@@ -160,7 +160,12 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
-              <FormLabel flex="0 0 120px" fontSize="16px">Job Value</FormLabel>
+              <FormLabel flex="0 0 120px" fontSize="16px" display="flex" alignItems="center">
+                Job Value
+                <Tooltip label="Leaving this field blank or adding a zero value job will create a service." aria-label="A tooltip">
+                  <Box as={Info} size={15} color="gray" ml={1} cursor="pointer" />
+                </Tooltip>
+              </FormLabel>
               <Input type="text" placeholder="Enter job value" value={jobValue} onChange={(e) => setJobValue(e.target.value)} fontSize="16px" flex="1" />
             </FormControl>
 

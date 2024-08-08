@@ -598,7 +598,7 @@ const JobsTable = () => {
                             borderColor={isEditing ? "gray.200" : "gray.200"}
                           />
                         ) : (
-                          `$${job.JobValue}`
+                          job.JobValue === 0 || job.JobValue === null ? 'SERVICE' : `$${job.JobValue}`
                         )}
                       </Td>
                       <Td style={{ color: job.Schedule.length > 0 ? '#5A6F77' : 'inherit' }}>
