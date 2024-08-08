@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box, Grid, Text, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody,
-  Table, Thead, Tbody, Tr, Th, Td, Flex, Tooltip, useToast, ChakraProvider, IconButton
+  Table, Thead, Tbody, Tr, Th, Td, Flex, Tooltip, useToast, ChakraProvider, IconButton, Skeleton
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { Info } from 'react-feather';
+import { Info, Plus } from 'react-feather';
 import axios from 'axios';
 
 const MotionBox = motion(Box);
@@ -23,10 +23,14 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
   const [modalKey, setModalKey] = useState(0);
   const [totalJobValue, setTotalJobValue] = useState(0);
   const [doubleClickedJob, setDoubleClickedJob] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const dayNames = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
   const fetchJobs = async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
     try {
       const res = await axios.get(`${process.env.REACT_APP_API_URL}/jobdetails`);
       setJobs(res.data);
@@ -44,6 +48,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
     } catch (error) {
       console.error('Error fetching jobs:', error);
       setJobs([]);
+      setErrorMessage("Unable to fetch jobs. Please reload the app or try again later.");
       toast({
         title: "Error",
         description: "Unable to fetch jobs.",
@@ -51,6 +56,8 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
         duration: 5000,
         isClosable: true,
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -130,78 +137,115 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 10 }}
         transition={{ duration: 0.1 }}
-        borderWidth="1px"
-        borderRadius="md"
         p={2}
         m={0.5}
         opacity={isWeekend ? 0.6 : 0.9}
-        bg={isWeekend ? '#F0F0F0' : 'white'}
+        bg={isToday ? '#E3F2FD' : (isWeekend ? '#F0F0F0' : 'white')}
         width="255px"
         height="auto"
-        border={isToday ? '1px solid' : '1px solid gray'}
-        borderColor={isToday ? 'blue.200' : 'gray.200'}
         textAlign="left"
         paddingTop={0}
         position="relative"
+        boxShadow="md"
+        borderRadius="md"
+        border="1px"
+        borderColor="gray.100"
       >
-        <Text fontSize='22px' fontWeight={isToday ? '500' : 'normal'} color={isToday ? '#2B6CB0' : (isWeekend ? 'gray.400' : 'inherit')}>
-          {dayDate.toLocaleString('default', { month: 'short' })} {dayDate.getDate()}
-        </Text>
-        <Text
-          position="absolute"
-          top="2px"
-          right="2px"
-          fontSize="14px"
-          fontWeight="500"
-          color={totalJobValue === 0 ? "transparent" : totalJobValue < 15000 ? "red.500" : "green.500"}
-        >
-          ${totalJobValue.toFixed(2)}
-        </Text>
-        {allJobsForDay.length > 0 && (
-          <Box mt={2}>
-            {allJobsForDay.map(job => (
-              <Box
-                key={job.JobNumber}
-                border="1px solid"
-                borderRadius="md"
-                p={2}
-                mb={2}
-                bg={job.Schedule.some(date => date.includes('(Test Fit)') && new Date(date).toDateString() === new Date(dayString).toDateString()) ? '#E6E6FA' : 'gray.100'}
-                borderColor="gray.100"
-              >
-                <Flex justifyContent="space-between" alignItems="center">
-                  <Box display="flex" alignItems="center">
-                    <Text fontWeight="bold" fontSize="14px" color="blue.800">{job.JobNumber}</Text>
-                    <Tooltip label={facilityColor(job.Facility).label} fontSize="md">
-                      <Box w="8px" h="8px" borderRadius="full" bg={facilityColor(job.Facility).color} ml={1}></Box>
-                    </Tooltip>
-                    {job.TestFit === 'yes' && (
-                      <Tooltip label={job.Schedule.some(date => date.includes('(Test Fit)')) ? "Test Fit Scheduled" : "Requires Test Fit"} fontSize="md">
-                        <Box w="8px" h="8px" borderRadius="full" bg={job.Schedule.some(date => date.includes('(Test Fit)')) ? 'purple.500' : 'purple.500'} position="relative" ml={1}>
+        {isLoading ? (
+          <>
+            <Skeleton height="30px" width="70px" mt={2} mb={3} pt={2} borderRadius="md" />
+            <Skeleton height="100px" width="100%" borderRadius="md" mb={2} boxShadow="md" />
+            <Skeleton height="100px" width="100%" borderRadius="md" mb={2} boxShadow="md" />
+            <Skeleton height="100px" width="100%" borderRadius="md" mb={2} boxShadow="md" />
+            <Skeleton height="100px" width="100%" borderRadius="md" mb={2} boxShadow="md" />
+            <Skeleton height="100px" width="100%" borderRadius="md" mb={2} boxShadow="md" />
+            <Skeleton height="100px" width="100%" borderRadius="md" mb={2} boxShadow="md" />
+            <Skeleton height="40px" width="20%" borderRadius="md" mt={4} />
+          </>
+        ) : (
+          <>
+            <Text fontSize='22px' fontWeight={isToday ? '600' : 'normal'} color={isToday ? 'blue.800' : (isWeekend ? 'gray.400' : 'gray.700')}>
+              {dayDate.toLocaleString('default', { month: 'short' })} {dayDate.getDate()}
+            </Text>
+            <Text
+              position="absolute"
+              top="3px"
+              right="8px"
+              fontSize="14px"
+              fontWeight="500"
+              color={totalJobValue === 0 ? "transparent" : totalJobValue < 15000 ? "red.500" : "green.500"}
+            >
+              ${totalJobValue.toFixed(2)}
+            </Text>
+            {allJobsForDay.length > 0 && (
+              <Box mt={2}>
+                {allJobsForDay.map(job => {
+                  const otherScheduledDates = jobs
+                    .filter(j => j.JobNumber === job.JobNumber && j.Schedule.length > 1)
+                    .flatMap(j => j.Schedule.filter(date => date !== dayString));
+                  const formattedDates = otherScheduledDates.map(date => {
+                    const dateObj = new Date(date);
+                    const formattedDate = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                    return date.includes('(Test Fit)') ? `${formattedDate} (Test Fit)` : formattedDate;
+                  }).filter(date => !date.includes(new Date(dayString).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })));
+                  const tooltipLabel = formattedDates.length > 0 ? `Also scheduled for: ${formattedDates.join('; ')}` : '';
+
+                  const isTestFitDate = job.Schedule.some(date => date.includes('(Test Fit)') && date.includes(dayString));
+
+                  return (
+                    <MotionBox
+                      key={job.JobNumber}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      p={2}
+                      mb={2}
+                      bg={isTestFitDate ? '#E6E6FA' : 'gray.100'}
+                      borderRadius="md"
+                      boxShadow="md"
+                    >
+                      <Flex justifyContent="space-between" alignItems="center">
+                        <Box display="flex" alignItems="center">
+                          <Tooltip label={<Text fontWeight="normal" fontSize="sm">{tooltipLabel}</Text>} isDisabled={!tooltipLabel}>
+                            <Text fontWeight="bold" fontSize="14px" color="blue.800" style={{ cursor: 'default' }}>
+                              {job.JobNumber}
+                            </Text>
+                          </Tooltip>
+                          <Tooltip label={<Text fontWeight="normal" fontSize="sm">{facilityColor(job.Facility).label}</Text>} isDisabled={false}>
+                            <Box w="8px" h="8px" borderRadius="full" bg={facilityColor(job.Facility).color} ml={1}></Box>
+                          </Tooltip>
+                          {job.TestFit === 'yes' && (
+                            <Tooltip label={<Text fontWeight="normal" fontSize="sm">{job.Schedule.some(date => date.includes('(Test Fit)')) ? "Test Fit Scheduled" : "Requires Test Fit"}</Text>} isDisabled={false}>
+                              <Box w="8px" h="8px" borderRadius="full" bg='purple.500' position="relative" ml={1}></Box>
+                            </Tooltip>
+                          )}
+                          {job.Rush === 'yes' && (
+                            <Tooltip label={<Text fontWeight="normal" fontSize="sm">Rush</Text>} isDisabled={false}>
+                              <Box w="8px" h="8px" borderRadius="full" bg='pink.500' ml={1}></Box>
+                            </Tooltip>
+                          )}
                         </Box>
-                      </Tooltip>
-                    )}
-                    {job.Rush === 'yes' && (
-                      <Tooltip label="Rush" fontSize="md">
-                        <Box w="8px" h="8px" borderRadius="full" bg='pink.500' ml={1}></Box>
-                      </Tooltip>
-                    )}
-                  </Box>
-                  <Text fontSize="14px" color={job.JobValue > 0 ? "blue.800" : "green.500"} fontWeight="400">
-                    {job.JobValue > 0 ? `$${job.JobValue}` : 'SERVICE'}
-                  </Text>
-                </Flex>
-                <Text fontSize="14px" color="blue.800">{job.Client}</Text>
-                <Text fontSize="14px" color="blue.800">{job.Color}</Text>
-                <Flex justifyContent="space-between" alignItems="center">
-                  <Text fontSize="14px" color="blue.800">Pieces: {job.Pieces}</Text>
-                  <Text fontSize="14px" color="blue.800">Due: {new Date(job.RequiredByDate).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}</Text>
-                </Flex>
+                        <Text fontSize="14px" color={job.JobValue > 0 ? "blue.800" : "green.500"} fontWeight="400">
+                          {job.JobValue > 0 ? `$${job.JobValue}` : 'SERVICE'}
+                        </Text>
+                      </Flex>
+                      <Text fontSize="14px" color="blue.800">{job.Client}</Text>
+                      <Text fontSize="14px" color="blue.800">{job.Color}</Text>
+                      <Flex justifyContent="space-between" alignItems="center">
+                        <Text fontSize="14px" color="blue.800">Pieces: {job.Pieces}</Text>
+                        <Text fontSize="14px" color="blue.800">Due: {new Date(job.RequiredByDate).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}</Text>
+                      </Flex>
+                    </MotionBox>
+                  );
+                })}
               </Box>
-            ))}
-          </Box>
+            )}
+            <Button mt={2} onClick={() => handleOpenModal(dayDate)} color="gray.600" aria-label={`Add jobs for ${dayDate.toDateString()}`}>
+              <Plus size={16} />
+            </Button>
+          </>
         )}
-        <Button mt={2} onClick={() => handleOpenModal(dayDate)}>+ Add Jobs</Button>
       </MotionBox>
     );
   }
@@ -390,17 +434,46 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
 
   return (
     <ChakraProvider>
-      <Grid templateColumns="repeat(7, 1fr)" gap={2}>
-        {dayNames.map(day => (
-          <Box key={day} textAlign="center" fontWeight="500" p={1}>{day}</Box>
+      {errorMessage && (
+        <Box
+          position="fixed"
+          top="0"
+          left="0"
+          width="100%"
+          height="100%"
+          bg="rgba(0, 0, 0, 0.7)"
+          color="white"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          zIndex="1000"
+          textAlign="center"
+          p={4}
+        >
+          <Text fontSize="lg">{errorMessage}</Text>
+        </Box>
+      )}
+      <Grid
+        templateColumns={{ base: "repeat(1, 1fr)", md: "repeat(7, 1fr)" }}
+        gap={2}
+      >
+        {days.map((day, index) => (
+          <Box key={index}>
+            <Box textAlign="center" fontWeight="500" color="gray.600" p={1}>
+              {dayNames[index]}
+            </Box>
+            <Box display="flex" justifyContent="center">
+              {day}
+            </Box>
+          </Box>
         ))}
-        {days}
       </Grid>
       <Box m={5}>
         <Modal key={modalKey} isOpen={isModalOpen} onClose={handleCloseModal} size="6xl">
           <ModalOverlay />
           <ModalContent>
-            <ModalHeader>Select Jobs for {selectedDate ? selectedDate.toDateString() : ''}
+            <ModalHeader>
+              Select Jobs for {selectedDate ? selectedDate.toDateString() : ''}
               <Tooltip
                 label={
                   <Box>
@@ -418,7 +491,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
                 isOpen={isTooltipVisible}
               >
                 <IconButton
-                  aria-label="Information"
+                  aria-label="Information about job scheduling"
                   icon={<Info size={16} />}
                   variant="ghost"
                   size="sm"
@@ -448,6 +521,8 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
                         key={job.JobNumber}
                         onClick={() => handleSingleClick(job.JobNumber)}
                         onDoubleClick={() => handleRowDoubleClick(job.JobNumber)}
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleSingleClick(job.JobNumber); }}
                         style={{
                           cursor: 'pointer',
                           backgroundColor: job.Schedule.some(date =>

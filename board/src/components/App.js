@@ -167,32 +167,72 @@ const App = () => {
               <Heading as="h1" color="#2B6CB0" fontWeight="500" textAlign="left">
                 {view === 'calendar' ? (
                   <Flex align="center">
-                    <Text>
-                      {currentDate.getFullYear()} | Week&nbsp;
+                    <Text fontSize="30px" fontWeight="bold" color="blue.800" bg="gray.100" p={2} borderRadius="md">
+                      {currentDate.getFullYear()} <span style={{ margin: '0 4px' }}>•</span> Week 
+                      {editableWeek ? (
+                        <Tooltip label="Edit Week" aria-label="Edit Week">
+                          <Text
+                            as="input"
+                            type="number"
+                            value={weekNumber}
+                            onChange={handleWeekChange}
+                            onBlur={handleBlur}
+                            onKeyDown={handleKeyPress}
+                            autoFocus
+                            style={{
+                              width: '50px',
+                              height: '28px',
+                              appearance: 'textfield',
+                              border: 'none',
+                              outline: 'none',
+                              background: 'gray.100',
+                              color: 'blue.800',
+                              fontWeight: 'bold',
+                              fontSize: '30px',
+                              padding: '2px',
+                              borderRadius: 'md',
+                              marginRight: '0.5rem',
+                            }}
+                          />
+                        </Tooltip>
+                      ) : (
+                        <Tooltip label="Edit Week" aria-label="Edit Week">
+                          <Text
+                            as="span"
+                            onClick={toggleEditableWeek}
+                            style={{
+                              cursor: 'pointer',
+                              marginRight: '0.5rem',
+                              background: 'gray.100',
+                              color: 'blue.800',
+                              fontWeight: 'bold',
+                              fontSize: '30px',
+                              padding: '2px',
+                              borderRadius: 'md',
+                            }}
+                          >
+                            {weekNumber}
+                          </Text>
+                        </Tooltip>
+                      )}
                     </Text>
-                    {editableWeek ? (
-                      <Input
-                        type="number"
-                        value={weekNumber}
-                        onChange={handleWeekChange}
-                        onBlur={handleBlur}
-                        onKeyDown={handleKeyPress}
-                        autoFocus
-                        style={{ width: 'auto', appearance: 'textfield', border: 'none', outline: 'none', marginRight: '0.5rem' }}
-                      />
-                    ) : (
-                      <Text onClick={toggleEditableWeek} style={{ cursor: 'pointer', marginRight: '0.5rem' }}>
-                        {weekNumber}
-                      </Text>
-                    )}
                   </Flex>
                 ) : (
-                  'Jobs List'
+                  <Text fontSize="30px" fontWeight="bold" color="blue.800" bg="gray.100" p={2} borderRadius="md" display="inline-block">
+                    Jobs List
+                  </Text>
                 )}
               </Heading>
             </Box>
             {view === 'calendar' ? (
-              <HStack mr={-90}>
+              <HStack
+                spacing={2}
+                mr={0}
+                ml={{ base: 4, md: 0 }}
+                justifyContent={{ base: "flex-end", md: "flex-end" }}
+                position={{ base: "relative", md: "absolute" }}
+                right={{ base: "0", md: "0" }}
+              >
                 <Box width="30px" height="30px" display="flex" alignItems="center" justifyContent="center">
                   <FeatherIcon
                     icon="chevron-left"
@@ -280,7 +320,7 @@ const App = () => {
         </AnimatePresence>
       </Flex>
     </ChakraProvider>
-  );
+  );    
 };
 
 export default App;

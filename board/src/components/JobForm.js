@@ -16,9 +16,11 @@ import {
   ModalFooter,
   useToast,
   Tooltip,
+  FormErrorMessage,
 } from '@chakra-ui/react';
 import { X, Info } from 'react-feather';
 import axios from 'axios';
+import { useBreakpointValue } from '@chakra-ui/react';
 
 const JobForm = ({ isOpen, onClose, fetchJobs }) => {
   const [jobNumber, setJobNumber] = useState('');
@@ -30,8 +32,16 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
   const [color, setColor] = useState('');
   const [testFit, setTestFit] = useState(false);
   const [rush, setRush] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [isFormValid, setIsFormValid] = useState(false);
 
   const toast = useToast();
+
+  const commonInputStyle = {
+    fontSize: useBreakpointValue({ base: '14px', md: '16px' }),
+    borderColor: 'gray.300',
+    _focus: { borderColor: 'blue.500' },
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -39,17 +49,52 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
     }
   }, [isOpen]);
 
-  const handleSave = async () => {
-    if (!jobNumber) {
-      toast({
-        title: "Error",
-        description: "Job Number is mandatory",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+      if (event.key === 'Enter') {
+        handleSave();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!jobNumber) newErrors.jobNumber = 'Job Number is required';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleJobValueChange = (e) => {
+    const value = e.target.value;
+    if (!isNaN(value) || value === '') {
+      setJobValue(value);
+      if (errors.jobValue) {
+        setErrors((prev) => ({ ...prev, jobValue: null }));
+      }
     }
+  };
+
+  const handlePiecesChange = (e) => {
+    const value = e.target.value;
+    if (!isNaN(value) || value === '') {
+      setPieces(value);
+      if (errors.pieces) {
+        setErrors((prev) => ({ ...prev, pieces: null }));
+      }
+    }
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) return;
 
     const newJob = {
       JobNumber: jobNumber,
@@ -140,48 +185,51 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
 
         <ModalBody>
           <Stack spacing="18px">
-            <FormControl display="flex" alignItems="center" isRequired>
+            <FormControl display="flex" alignItems="center" isRequired isInvalid={!!errors.jobNumber}>
               <FormLabel flex="0 0 120px" fontSize="16px">Job Number</FormLabel>
-              <Input type="text" placeholder="Enter job number" value={jobNumber} onChange={(e) => setJobNumber(e.target.value)} fontSize="16px" flex="1" />
+              <Input type="text" placeholder="Enter job number" value={jobNumber} onChange={(e) => setJobNumber(e.target.value)} {...commonInputStyle} />
+              {errors.jobNumber && <FormErrorMessage>{errors.jobNumber}</FormErrorMessage>}
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Client</FormLabel>
-              <Input type="text" placeholder="Enter client name" value={client} onChange={(e) => setClient(e.target.value)} fontSize="16px" flex="1" />
+              <Input type="text" placeholder="Enter client name" value={client} onChange={(e) => setClient(e.target.value)} {...commonInputStyle} />
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Facility</FormLabel>
-              <Select placeholder="Select facility" value={facility} onChange={(e) => setFacility(e.target.value)} fontSize="16px" flex="1">
+              <Select placeholder="Select facility" value={facility} onChange={(e) => setFacility(e.target.value)} {...commonInputStyle}>
                 <option value="Aluminum">Aluminum</option>
                 <option value="Steel">Steel</option>
                 <option value="Vinyl">Vinyl</option>
               </Select>
             </FormControl>
 
-            <FormControl display="flex" alignItems="center">
+            <FormControl display="flex" alignItems="center" isInvalid={!!errors.jobValue}>
               <FormLabel flex="0 0 120px" fontSize="16px" display="flex" alignItems="center">
                 Job Value
                 <Tooltip label="Leaving this field blank or adding a zero value job will create a service." aria-label="A tooltip">
                   <Box as={Info} size={15} color="gray" ml={1} cursor="pointer" />
                 </Tooltip>
               </FormLabel>
-              <Input type="text" placeholder="Enter job value" value={jobValue} onChange={(e) => setJobValue(e.target.value)} fontSize="16px" flex="1" />
+              <Input type="text" placeholder="Enter job value" value={jobValue} onChange={handleJobValueChange} {...commonInputStyle} />
+              {errors.jobValue && <FormErrorMessage>{errors.jobValue}</FormErrorMessage>}
             </FormControl>
 
-            <FormControl display="flex" alignItems="center">
+            <FormControl display="flex" alignItems="center" isInvalid={!!errors.pieces}>
               <FormLabel flex="0 0 120px" fontSize="16px">Pieces</FormLabel>
-              <Input type="text" placeholder="Enter total job pieces" value={pieces} onChange={(e) => setPieces(e.target.value)} fontSize="16px" flex="1" />
+              <Input type="text" placeholder="Enter total job pieces" value={pieces} onChange={handlePiecesChange} {...commonInputStyle} />
+              {errors.pieces && <FormErrorMessage>{errors.pieces}</FormErrorMessage>}
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Required By</FormLabel>
-              <Input type="date" value={requiredByDate} onChange={(e) => setRequiredByDate(e.target.value)} fontSize="16px" flex="1" />
+              <Input type="date" value={requiredByDate} onChange={(e) => setRequiredByDate(e.target.value)} {...commonInputStyle} />
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
               <FormLabel flex="0 0 120px" fontSize="16px">Color</FormLabel>
-              <Input type="text" placeholder="Enter job color" value={color} onChange={(e) => setColor(e.target.value)} fontSize="16px" flex="1" />
+              <Input type="text" placeholder="Enter job color" value={color} onChange={(e) => setColor(e.target.value)} {...commonInputStyle} />
             </FormControl>
 
             <FormControl display="flex" alignItems="center">
@@ -213,12 +261,36 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
             fontSize="18px"
             height="36px"
             width="120px"
-            onClick={() => {
-              handleSave();
-              onClose();
-            }}
+            onClick={handleSave}
+            isDisabled={!jobNumber}
           >
             Save
+          </Button>
+          <Button
+            colorScheme="blue"
+            borderRadius="4px"
+            fontSize="18px"
+            height="36px"
+            width="180px"
+            marginLeft="10px"
+            onClick={async () => {
+              await handleSave();
+              resetForm();
+            }}
+            isDisabled={!jobNumber}
+          >
+            Save & Add New
+          </Button>
+          <Button
+            colorScheme="gray"
+            borderRadius="4px"
+            fontSize="18px"
+            height="36px"
+            width="120px"
+            marginLeft="10px"
+            onClick={resetForm}
+          >
+            Clear
           </Button>
         </ModalFooter>
       </ModalContent>
