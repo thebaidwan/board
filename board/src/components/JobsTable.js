@@ -340,8 +340,8 @@ const JobsTable = () => {
             {errorMessage}
           </Box>
         )}
-        <Flex mb="5" justifyContent="space-between" direction={{ base: "column", md: "row" }}>
-          <Box position="relative" width="300px" mb="4" mx="auto">
+        <Flex mb="0" justifyContent="space-between" alignItems="center" direction={{ base: "column", md: "row" }}>
+          <Box position="relative" width="300px" mb="4" alignSelf={{ base: "center", md: "flex-start" }}>
             <Box position="absolute" left="10px" top="50%" transform="translateY(-50%)">
               <Search size={18} color="gray" />
             </Box>
@@ -352,7 +352,7 @@ const JobsTable = () => {
               pl="35px"
             />
           </Box>
-          <Flex justifyContent="flex-end" direction={{ base: "column", md: "row" }} alignItems={{ base: "center", md: "flex-end" }}>
+          <Flex justifyContent="flex-end" direction={{ base: "column", md: "row" }} alignItems="center">
             <Tooltip label="Refresh Table" aria-label="Refresh Table">
               <Box
                 width="30px"
@@ -364,7 +364,7 @@ const JobsTable = () => {
                 onClick={fetchJobs}
                 mr={{ base: 0, md: 3 }}
                 mt={{ base: 2, md: 1 }}
-                mb={{ base: 2, md: 0 }}
+                mb={{ base: 2, md: 5 }}
                 mx="auto"
               >
                 <RefreshCw size={24} />
@@ -394,7 +394,7 @@ const JobsTable = () => {
                 pr="12px"
                 pt="2px"
                 mr={{ base: 0, md: 2 }}
-                mb={{ base: 2, md: 0 }}
+                mb={{ base: 2, md: 5 }}
                 mx="auto"
               >
                 Batch Upload Jobs
@@ -418,7 +418,7 @@ const JobsTable = () => {
               pr="12px"
               pt="2px"
               mr={{ base: 0, md: 2 }}
-              mb={{ base: 2, md: 0 }}
+              mb={{ base: 2, md: 5 }}
               mx="auto"
             >
               Add Job
@@ -440,7 +440,7 @@ const JobsTable = () => {
               alignItems="center"
               pr="12px"
               pt="2px"
-              mb={{ base: 2, md: 0 }}
+              mb={{ base: 2, md: 5 }}
               mx="auto"
             >
               {isEditing ? 'Cancel' : 'Edit'}
@@ -463,7 +463,7 @@ const JobsTable = () => {
                     justifyContent="center"
                     alignItems="center"
                     ml={{ base: 0, md: 2 }}
-                    mb={{ base: 2, md: 0 }}
+                    mb={{ base: 2, md: 5 }}
                     mx="auto"
                   />
                 )}
@@ -482,7 +482,7 @@ const JobsTable = () => {
                   justifyContent="center"
                   alignItems="center"
                   ml={{ base: 0, md: 2 }}
-                  mb={{ base: 2, md: 0 }}
+                  mb={{ base: 2, md: 5 }}
                   mx="auto"
                 >
                   Save
@@ -496,7 +496,7 @@ const JobsTable = () => {
         ) : (
           <Box pb="2">
             <Box overflowX="auto" maxW={{ base: "100%", md: "100%" }} mx="auto">
-            <Table variant="striped" colorScheme="gray" size="sm" border="1px" borderColor="gray.100" borderRadius="md" width="100%">
+              <Table variant="striped" colorScheme="gray" size="sm" border="1px" borderColor="gray.100" borderRadius="md" width="100%">
                 <Thead className="sticky-header">
                   <Tr>
                     <Th onClick={() => handleSort('JobNumber')}>
