@@ -37,7 +37,7 @@ MongoClient.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true
     });
 
     app.post('/jobdetails', async (req, res) => {
-      const { JobNumber, Client, Facility, JobValue, Pieces, RequiredByDate, Color, TestFit, Rush, Schedule } = req.body;
+      const { JobNumber, Client, Facility, JobValue, Pieces, RequiredByDate, Color, TestFit, Rush, Schedule, Archive } = req.body;
 
       try {
         const jobDetails = {
@@ -50,7 +50,8 @@ MongoClient.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true
           Color,
           TestFit,
           Rush,
-          Schedule: Schedule || []
+          Schedule: Schedule || [],
+          Archive,
         };
 
         const result = await db.collection(COLLECTION_NAME).insertOne(jobDetails);
@@ -199,6 +200,7 @@ MongoClient.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true
         TestFit: job.TestFit === 'yes' ? 'yes' : 'no',
         Rush: job.Rush === 'yes' ? 'yes' : 'no',
         Schedule: job.Schedule ? job.Schedule.split(',').map(date => new Date(date)) : [],
+        Archive: job.Archive === 'yes' ? 'yes' : 'no'
       }));
 
       for (const job of jobs) {
