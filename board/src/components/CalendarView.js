@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box, Grid, Text, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody,
-  Table, Thead, Tbody, Tr, Th, Td, Flex, Tooltip, useToast, ChakraProvider, IconButton, Skeleton
+  Table, Thead, Tbody, Tr, Th, Td, Flex, Tooltip, useToast, ChakraProvider, IconButton, Skeleton, Input
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { Info, Plus } from 'react-feather';
+import { Info, Plus, Search } from 'react-feather';
 import axios from 'axios';
 
 const MotionBox = motion(Box);
@@ -25,6 +25,8 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
   const [doubleClickedJob, setDoubleClickedJob] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);
+
+  const [searchQuery, setSearchQuery] = useState('');
 
   const dayNames = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
@@ -432,6 +434,13 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
     handleCloseModal();
   };
 
+  const filteredJobs = jobs
+    .filter(job => (job.Archive === 'no' || job.Archive === null) && (
+      job.JobNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.Client.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.Facility.toLowerCase().includes(searchQuery.toLowerCase())
+    ));
+
   return (
     <ChakraProvider>
       {errorMessage && (
@@ -503,9 +512,22 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
               </Tooltip>
             </ModalHeader>
             <ModalBody>
+              <Box mb="20px" display="flex" justifyContent="flex-end">
+                <Box position="relative" width="300px">
+                  <Box position="absolute" left="10px" top="50%" transform="translateY(-50%)">
+                    <Search size="18px" color="gray" />
+                  </Box>
+                  <Input
+                    placeholder="Search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    pl="35px"
+                  />
+                </Box>
+              </Box>
               <Box maxHeight="650px" overflowY="auto">
                 <Table>
-                  <Thead>
+                  <Thead position="sticky" top="0" bg="white" zIndex="docked" boxShadow="sm">
                     <Tr>
                       <Th>Job Number</Th>
                       <Th>Client</Th>
@@ -516,7 +538,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
                     </Tr>
                   </Thead>
                   <Tbody>
-                    {jobs.map(job => (
+                    {filteredJobs.map(job => (
                       <Tr
                         key={job.JobNumber}
                         onClick={() => handleSingleClick(job.JobNumber)}

@@ -121,7 +121,6 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
       if (response.status !== 200 && response.status !== 201) {
         throw new Error('Failed to add job');
       }
-      onClose();
     } catch (error) {
       console.error('Error saving job:', error);
       if (error.response && error.response.status !== 400) {
@@ -132,7 +131,6 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
           duration: 3000,
           isClosable: true,
         });
-        onClose();
       } else {
         toast({
           title: 'Error',
@@ -263,7 +261,10 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
             fontSize="18px"
             height="36px"
             width="120px"
-            onClick={handleSave}
+            onClick={async () => {
+              await handleSave();
+              onClose();
+            }}
             isDisabled={!jobNumber}
           >
             Save

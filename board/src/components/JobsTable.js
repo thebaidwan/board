@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Table, Thead, Tbody, Tr, Th, Td, Button, Flex, Checkbox, IconButton, Input, Select, Spinner, Tooltip, useToast, ChakraProvider, Skeleton, useDisclosure, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@chakra-ui/react';
-import { Plus, Trash2, Edit, X, Save, RefreshCw, ChevronDown, ChevronUp, Search } from 'react-feather';
+import { Plus, Trash2, Edit, X, Save, RefreshCw, ChevronDown, ChevronUp, Search, Archive, AlertCircle } from 'react-feather';
 import axios from 'axios';
 import JobForm from './JobForm';
 import ReactPaginate from 'react-paginate';
@@ -18,6 +18,10 @@ const JobsTable = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+  const [filteredJobs, setFilteredJobs] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [toastShown, setToastShown] = useState(false);
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [isSorting, setIsSorting] = useState(false);
@@ -59,15 +63,8 @@ const JobsTable = () => {
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/jobdetails`);
       setJobs(response.data);
 
-      const pastJobs = getPastJobs(response.data);
-      if (pastJobs.length > 0 && !isDismissedWithinOneDay()) {
-        const confirmed = window.confirm("It is advised to delete jobs that were installed more than two weeks ago from the Board. If you choose not to proceed now, you will be reminded again tomorrow. Would you like to proceed?");
-        if (confirmed) {
-          await deletePastJobs(pastJobs);
-        } else {
-          rememberDismissal();
-        }
-      }
+      await archivePastJobs(response.data);
+
     } catch (error) {
       console.error('Error fetching job details:', error);
       setErrorMessage('Failed to fetch job details. Please try again later.');
@@ -181,48 +178,98 @@ const JobsTable = () => {
     }
   };
 
-  const getPastJobs = (jobs) => {
-    const twoWeeksAgo = new Date();
-    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-    const formattedTwoWeeksAgo = twoWeeksAgo.toISOString().split('T')[0];
+  const archivePastJobs = async (jobs) => {
 
-    return jobs.filter(job =>
-      job.Schedule.length > 0 && job.Schedule.every(scheduleDate => new Date(scheduleDate) < new Date(formattedTwoWeeksAgo))
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const formattedOneWeekAgo = oneWeekAgo.toISOString().split('T')[0];
+
+    const jobsToArchive = jobs.filter(job =>
+      job.Schedule.length > 0 &&
+      job.Schedule.every(scheduleDate => new Date(scheduleDate) < new Date(formattedOneWeekAgo)) &&
+      job.Archive !== "yes"
     );
+
+    if (jobsToArchive.length > 0) {
+      try {
+        await Promise.all(jobsToArchive.map(job =>
+          axios.put(`${process.env.REACT_APP_API_URL}/jobdetails/${job._id}`, { Archive: "yes" })
+        ));
+
+        if (!toastShown) {
+          setToastShown(true);
+          toast({
+            title: 'Jobs Archived',
+            description: `${jobsToArchive.length} job${jobsToArchive.length > 1 ? 's' : ''} older than one week have been archived successfully.`,
+            status: 'success',
+            duration: 2000,
+            isClosable: true,
+          });
+        }
+      } catch (error) {
+        console.error('Error archiving jobs:', error);
+        toast({
+          title: 'Error Archiving Jobs',
+          description: 'An error occurred while archiving jobs.',
+          status: 'error',
+          duration: 2000,
+          isClosable: true,
+        });
+      }
+    }
   };
 
-  const isDismissedWithinOneDay = () => {
-    const dismissalTimestamp = localStorage.getItem('dismissalTimestamp');
-    if (!dismissalTimestamp) return false;
-    const oneDayInMillis = 24 * 60 * 60 * 1000;
-    return (new Date() - new Date(dismissalTimestamp)) < oneDayInMillis;
+  const handleDeleteOldJobs = () => {
+    setIsModalOpen(true);
   };
 
-  const rememberDismissal = () => {
-    localStorage.setItem('dismissalTimestamp', new Date().toISOString());
-  };
+  const deletePastJobs = async (jobs) => {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const formattedSixMonthsAgo = sixMonthsAgo.toISOString().split('T')[0];
 
-  const deletePastJobs = async (pastJobs) => {
+    const jobsToDelete = jobs.filter(job =>
+      job.Schedule.length > 0 && job.Schedule.every(scheduleDate => new Date(scheduleDate) < new Date(formattedSixMonthsAgo))
+    );
+
+    if (jobsToDelete.length === 0) {
+      showToast('No Jobs to Delete', 'There are no jobs to delete.', 'info');
+      return;
+    }
+
     try {
-      await Promise.all(pastJobs.map(job => axios.delete(`${process.env.REACT_APP_API_URL}/jobdetails/${job._id}`)));
-      toast({
-        title: 'Past Jobs Deleted',
-        description: 'All past jobs have been deleted successfully.',
-        status: 'success',
-        duration: 2000,
-        isClosable: true,
-      });
+      await deleteJobs(jobsToDelete);
+      showToast('Past Jobs Deleted', 'All past jobs have been deleted successfully.', 'success');
       await fetchJobs();
     } catch (error) {
       console.error('Error deleting past jobs:', error);
-      toast({
-        title: 'Error Deleting Past Jobs',
-        description: 'An error occurred while deleting past jobs.',
-        status: 'error',
-        duration: 2000,
-        isClosable: true,
-      });
+      showToast('Error Deleting Past Jobs', 'An error occurred while deleting past jobs.', 'error');
     }
+  };
+
+  const handleConfirmDelete = () => {
+    deletePastJobs(jobs);
+    setIsModalOpen(false);
+  };
+
+  const handleCancelDelete = () => {
+    setIsModalOpen(false);
+  };
+
+  const deleteJobs = async (jobsToDelete) => {
+    await Promise.all(jobsToDelete.map(job =>
+      axios.delete(`${process.env.REACT_APP_API_URL}/jobdetails/${job._id}`)
+    ));
+  };
+
+  const showToast = (title, description, status) => {
+    toast({
+      title,
+      description,
+      status,
+      duration: 2000,
+      isClosable: true,
+    });
   };
 
   const formatDateForInput = (dateString) => {
@@ -317,13 +364,23 @@ const JobsTable = () => {
     setCurrentPage(0);
   };
 
+  useEffect(() => {
+    const filtered = jobs
+      .filter((job) => job.Archive === (showArchived ? 'yes' : 'no'))
+      .filter((job) =>
+        job.JobNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.Client.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+
+    setFilteredJobs(filtered);
+  }, [searchTerm, showArchived, jobs]);
+
   const offset = currentPage * itemsPerPage;
-  const filteredJobs = sortedJobs.filter(job =>
-    Object.values(job).some(value =>
-      String(value).toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
-  const currentJobs = filteredJobs.slice(offset, offset + itemsPerPage);
+  const currentJobsPage = filteredJobs.slice(offset, offset + itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [searchTerm, showArchived]);
 
   const handleKeyDown = (event, action) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -341,16 +398,56 @@ const JobsTable = () => {
           </Box>
         )}
         <Flex mb="0" justifyContent="space-between" alignItems="center" direction={{ base: "column", md: "row" }}>
-          <Box position="relative" width="300px" mb="4" alignSelf={{ base: "center", md: "flex-start" }}>
-            <Box position="absolute" left="10px" top="50%" transform="translateY(-50%)">
-              <Search size={18} color="gray" />
+          <Box display="flex" alignItems="center" mb="4" alignSelf={{ base: "center", md: "flex-start" }}>
+            <Box position="relative" width="300px">
+              <Box position="absolute" left="10px" top="50%" transform="translateY(-50%)">
+                <Search size="18px" color="gray" />
+              </Box>
+              <Input
+                placeholder="Search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                pl="35px"
+              />
             </Box>
-            <Input
-              placeholder="Search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              pl="35px"
-            />
+            <Tooltip label="Archive" aria-label="Archive Jobs" ml="2">
+              <IconButton
+                icon={<Archive size="18px" />}
+                onClick={() => setShowArchived(!showArchived)}
+                variant="outline"
+                colorScheme={showArchived ? "blue" : "gray"}
+                ml="2"
+                bg={showArchived ? "red.500" : "transparent"}
+                borderColor={showArchived ? "transparent" : "gray.200"}
+                color={showArchived ? "white" : "inherit"}
+              />
+            </Tooltip>
+            {showArchived && (
+              <Tooltip label="Delete Old Jobs" aria-label="Alert" ml="2">
+                <IconButton
+                  icon={<AlertCircle size="18px" />}
+                  variant="outline"
+                  colorScheme="yellow"
+                  ml="2"
+                  onClick={handleDeleteOldJobs}
+                />
+              </Tooltip>
+            )}
+            <Modal isOpen={isModalOpen} onClose={handleCancelDelete}>
+              <ModalOverlay />
+              <ModalContent>
+                <ModalHeader>Confirm Deletion</ModalHeader>
+                <ModalBody>
+                  Jobs installed over 6 months ago will be deleted. Are you sure you want to proceed? This action cannot be undone.
+                </ModalBody>
+                <ModalFooter>
+                  <Button colorScheme="blue" mr={3} onClick={handleCancelDelete}>Cancel</Button>
+                  <Button colorScheme="red" onClick={handleConfirmDelete}>
+                    Delete
+                  </Button>
+                </ModalFooter>
+              </ModalContent>
+            </Modal>
           </Box>
           <Flex justifyContent="flex-end" direction={{ base: "column", md: "row" }} alignItems="center">
             <Tooltip label="Refresh Table" aria-label="Refresh Table">
@@ -496,8 +593,8 @@ const JobsTable = () => {
         ) : (
           <Box pb="2">
             <Box overflowX="auto" maxW={{ base: "100%", md: "100%" }} mx="auto">
-              <Table variant="striped" colorScheme="gray" size="sm" border="1px" borderColor="gray.100" borderRadius="md" width="100%">
-                <Thead className="sticky-header">
+              <Table data={currentJobsPage} variant="striped" colorScheme="gray" size="sm" border="1px" borderColor="gray.100" borderRadius="md" width="100%">
+                <Thead>
                   <Tr>
                     <Th onClick={() => handleSort('JobNumber')}>
                       <Flex alignItems="center">
@@ -565,7 +662,7 @@ const JobsTable = () => {
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {currentJobs.map((job) => (
+                  {currentJobsPage.map((job) => (
                     <Tooltip key={job._id} label={renderTooltip(job)} placement="left" hasArrow maxWidth="160px">
                       <Tr
                         bg={duplicateJobNumbers.includes(job.JobNumber) ? 'red.100' : 'white'}
@@ -736,8 +833,8 @@ const JobsTable = () => {
               </Select>
               <Box flex="flex-end" ml="4">
                 <ReactPaginate
-                  previousLabel={'Previous Page'}
-                  nextLabel={'Next Page'}
+                  previousLabel={'Previous'}
+                  nextLabel={'Next'}
                   breakLabel={'...'}
                   breakClassName={'break-me'}
                   pageCount={Math.ceil(filteredJobs.length / itemsPerPage)}
@@ -755,6 +852,7 @@ const JobsTable = () => {
                   previousLinkClassName={'page-link'}
                   nextLinkClassName={'page-link'}
                   breakLinkClassName={'page-link'}
+                  forcePage={currentPage}
                 />
               </Box>
             </Flex>

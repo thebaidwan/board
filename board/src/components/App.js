@@ -125,34 +125,44 @@ const App = () => {
     return (
       <ChakraProvider>
         <Flex direction="column" align="center" justify="center" minH="100vh">
-          <Input
-            type="password"
-            placeholder="Enter password"
-            value={password}
-            onChange={handlePasswordChange}
-            mb={6}
-            size="lg"
-            maxW="400px"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleLogin();
-              }
-            }}
-          />
-          <Button
-            onClick={handleLogin}
-            colorScheme="blue"
-            size="lg"
-            mt={6}
-            type="submit"
+          <Box 
+            p={6} 
+            borderRadius="md" 
+            boxShadow="md" 
+            bg="white" 
+            maxW="400px" 
+            w="full"
           >
-            Login
-          </Button>
-          {error && (
-            <Text color="red.500" mt={4}>
-              {error}
-            </Text>
-          )}
+            <Input
+              type="password"
+              placeholder="Enter password"
+              value={password}
+              onChange={handlePasswordChange}
+              mb={4}
+              size="lg"
+              isFullWidth
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleLogin();
+                }
+              }}
+            />
+            <Button
+              onClick={handleLogin}
+              colorScheme="blue"
+              size="lg"
+              w="full"
+              mb={4}
+              type="submit"
+            >
+              Login
+            </Button>
+            {error && (
+              <Text color="red.500">
+                {error}
+              </Text>
+            )}
+          </Box>
         </Flex>
       </ChakraProvider>
     );
