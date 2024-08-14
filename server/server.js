@@ -51,7 +51,7 @@ MongoClient.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true
           TestFit,
           Rush,
           Schedule: Schedule || [],
-          Archive,
+          Archive: 'no',
         };
 
         const result = await db.collection(COLLECTION_NAME).insertOne(jobDetails);
