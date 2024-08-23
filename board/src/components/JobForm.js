@@ -173,12 +173,12 @@ const JobForm = ({ isOpen, onClose, fetchJobs }) => {
             <Box
               as={X}
               size={24}
-              color="black"
+              color="gray.400"
               onClick={onClose}
               cursor="pointer"
               aria-label="Close"
-              _hover={{ opacity: 0.7 }}
-              transition="opacity 0.3s"
+              _hover={{ color: 'gray.800' }}
+              transition="color 0.3s"
             />
           </Box>
         </ModalHeader>

@@ -1,26 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { ChakraProvider, Flex, Box, Text, IconButton, HStack, Heading, Input, Button, Tooltip, Grid } from '@chakra-ui/react';
+import { ChakraProvider, Flex, Box, Text, IconButton, HStack, Heading, Input, Button, Tooltip, Grid, Table, Tbody, Tr, Td, Popover, PopoverTrigger, PopoverContent, PopoverBody } from '@chakra-ui/react';
 import * as feather from 'feather-icons';
 import CalendarView from './CalendarView';
 import JobsTable from './JobsTable';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Clipboard, CheckCircle, Zap } from 'react-feather';
 
 const MotionGrid = motion(Grid);
 
-const FeatherIcon = ({ icon, size = 24, color = 'gray.500', onClick, tooltipText }) => {
+const FeatherIcon = ({ icon, size = 24, color = 'gray.300', onClick, tooltipText }) => {
   const iconSvg = feather.icons[icon].toSvg({ width: size, height: size });
   return (
-    <Tooltip label={tooltipText} placement="bottom" gutter={-60}>
+    <Tooltip label={tooltipText} placement="bottom">
       <Box
         as="span"
         onClick={onClick}
         cursor={onClick ? 'pointer' : 'default'}
         display="inline-block"
-        width={size}
-        height={size}
-        transition="opacity 0.3s"
-        _hover={{ opacity: 0.8 }}
-        marginTop={20}
+        width={`${size}px`}
+        height={`${size}px`}
+        transition="color 0.3s"
+        color={color}
+        _hover={{ color: 'gray.800' }}
         dangerouslySetInnerHTML={{ __html: iconSvg }}
       />
     </Tooltip>
@@ -125,12 +126,12 @@ const App = () => {
     return (
       <ChakraProvider>
         <Flex direction="column" align="center" justify="center" minH="100vh">
-          <Box 
-            p={6} 
-            borderRadius="md" 
-            boxShadow="md" 
-            bg="white" 
-            maxW="400px" 
+          <Box
+            p={6}
+            borderRadius="md"
+            boxShadow="md"
+            bg="white"
+            maxW="400px"
             w="full"
           >
             <Input
@@ -151,9 +152,11 @@ const App = () => {
               onClick={handleLogin}
               colorScheme="blue"
               size="lg"
-              w="full"
+              w="40%"
               mb={4}
               type="submit"
+              display="block"
+              margin="0 auto"
             >
               Login
             </Button>
@@ -174,118 +177,173 @@ const App = () => {
         <Box w="100%" bg="white" p={2} mb={8} boxShadow="none">
           <Flex justifyContent="space-between" alignItems="left" w="95%">
             <Box flex="1" ml={view === 'calendar' ? '0' : '192'} mt={view === 'calendar' ? '1' : '5'}>
-              <Heading as="h1" color="#2B6CB0" fontWeight="500" textAlign="left">
-                {view === 'calendar' ? (
-                  <Flex align="center">
-                    <Text fontSize="30px" fontWeight="bold" color="blue.800" bg="gray.100" p={2} borderRadius="md">
-                      {currentDate.getFullYear()} <span style={{ margin: '0 4px' }}>•</span> Week 
-                      {editableWeek ? (
-                        <Tooltip label="Edit Week" aria-label="Edit Week">
-                          <Text
-                            as="input"
-                            type="number"
-                            value={weekNumber}
-                            onChange={handleWeekChange}
-                            onBlur={handleBlur}
-                            onKeyDown={handleKeyPress}
-                            autoFocus
-                            style={{
-                              width: '50px',
-                              height: '28px',
-                              appearance: 'textfield',
-                              border: 'none',
-                              outline: 'none',
-                              background: 'gray.100',
-                              color: 'blue.800',
-                              fontWeight: 'bold',
-                              fontSize: '30px',
-                              padding: '2px',
-                              borderRadius: 'md',
-                              marginRight: '0.5rem',
-                            }}
-                          />
-                        </Tooltip>
-                      ) : (
-                        <Tooltip label="Edit Week" aria-label="Edit Week">
-                          <Text
-                            as="span"
-                            onClick={toggleEditableWeek}
-                            style={{
-                              cursor: 'pointer',
-                              marginRight: '0.5rem',
-                              background: 'gray.100',
-                              color: 'blue.800',
-                              fontWeight: 'bold',
-                              fontSize: '30px',
-                              padding: '2px',
-                              borderRadius: 'md',
-                            }}
-                          >
-                            {weekNumber}
-                          </Text>
-                        </Tooltip>
-                      )}
+              <Flex align="center">
+                <Heading as="h1" color="#2B6CB0" fontWeight="500" textAlign="left">
+                  {view === 'calendar' ? (
+                    <Flex align="center">
+                      <Text fontSize="30px" fontWeight="bold" color="blue.800" bg="gray.100" p={2} borderRadius="md">
+                        {currentDate.getFullYear()} <span style={{ margin: '0 4px' }}>•</span> Week{' '}
+                        {editableWeek ? (
+                          <Tooltip label="Edit Week" aria-label="Edit Week">
+                            <Text
+                              as="input"
+                              type="number"
+                              value={weekNumber}
+                              onChange={handleWeekChange}
+                              onBlur={handleBlur}
+                              onKeyDown={handleKeyPress}
+                              autoFocus
+                              style={{
+                                width: '50px',
+                                height: '28px',
+                                appearance: 'textfield',
+                                border: 'none',
+                                outline: 'none',
+                                background: 'gray.100',
+                                color: 'blue.800',
+                                fontWeight: 'bold',
+                                fontSize: '30px',
+                                padding: '2px',
+                                borderRadius: 'md',
+                                marginRight: '0.5rem',
+                              }}
+                            />
+                          </Tooltip>
+                        ) : (
+                          <Tooltip label="Edit Week" aria-label="Edit Week">
+                            <Text
+                              as="span"
+                              onClick={toggleEditableWeek}
+                              style={{
+                                cursor: 'pointer',
+                                marginRight: '0.5rem',
+                                background: 'gray.100',
+                                color: 'blue.800',
+                                fontWeight: 'bold',
+                                fontSize: '30px',
+                                padding: '2px',
+                                borderRadius: 'md',
+                              }}
+                            >
+                              {weekNumber}
+                            </Text>
+                          </Tooltip>
+                        )}
+                      </Text>
+                      <Popover trigger="hover" placement="bottom">
+                        <PopoverTrigger>
+                          <Box as="span" ml={2} cursor="pointer">
+                            <FeatherIcon icon="info" size={24} color="gray.400" />
+                          </Box>
+                        </PopoverTrigger>
+                        <PopoverContent border="none" boxShadow="none" bg="transparent">
+                          <PopoverBody p={0}>
+                            <Box p={4} borderRadius="md" bg="gray.50" boxShadow="lg">
+                              <Text fontWeight="bold" mb={4} color="gray.600" fontSize='20px'>Icon Legend</Text>
+                              <Table variant="simple" size="sm" p={2}>
+                                <Tbody>
+                                  <Tr>
+                                    <Td>
+                                      <Box w="12px" h="12px" borderRadius="full" bg="blue.500" display="inline-block" />
+                                    </Td>
+                                    <Td color="gray.600">Aluminum</Td>
+                                  </Tr>
+                                  <Tr>
+                                    <Td>
+                                      <Box w="12px" h="12px" borderRadius="full" bg="red.500" display="inline-block" />
+                                    </Td>
+                                    <Td color="gray.600">Steel</Td>
+                                  </Tr>
+                                  <Tr>
+                                    <Td>
+                                      <Box w="12px" h="12px" borderRadius="full" bg="yellow.500" display="inline-block" />
+                                    </Td>
+                                    <Td color="gray.600">Vinyl</Td>
+                                  </Tr>
+                                  <Tr>
+                                    <Td>
+                                      <Box w="12px" h="12px" borderRadius="full" bg="gray.500" display="inline-block" />
+                                    </Td>
+                                    <Td color="gray.600">Unknown</Td>
+                                  </Tr>
+                                  <Tr>
+                                    <Td>
+                                      <Clipboard size={14} style={{ color: '#9B59B6' }} />
+                                    </Td>
+                                    <Td color="gray.600">Test Fit Required</Td>
+                                  </Tr>
+                                  <Tr>
+                                    <Td>
+                                      <CheckCircle size={14} style={{ color: '#9B59B6' }} />
+                                    </Td>
+                                    <Td color="gray.600">Test Fit Scheduled</Td>
+                                  </Tr>
+                                  <Tr>
+                                    <Td>
+                                      <Zap size={14} style={{ color: '#D53F8C' }} />
+                                    </Td>
+                                    <Td color="gray.600">Rush</Td>
+                                  </Tr>
+                                </Tbody>
+                              </Table>
+                            </Box>
+                          </PopoverBody>
+                        </PopoverContent>
+                      </Popover>
+                    </Flex>
+                  ) : (
+                    <Text fontSize="30px" fontWeight="bold" color="blue.800" bg="gray.100" p={2} borderRadius="md" display="inline-block">
+                      Jobs
                     </Text>
-                  </Flex>
-                ) : (
-                  <Text fontSize="30px" fontWeight="bold" color="blue.800" bg="gray.100" p={2} borderRadius="md" display="inline-block">
-                    Jobs List
-                  </Text>
-                )}
-              </Heading>
+                  )}
+                </Heading>
+              </Flex>
             </Box>
             {view === 'calendar' ? (
               <HStack
-                spacing={2}
+                spacing={4}
                 mr={0}
                 ml={{ base: 4, md: 0 }}
+                mt={2}
                 justifyContent={{ base: "flex-end", md: "flex-end" }}
                 position={{ base: "relative", md: "absolute" }}
                 right={{ base: "0", md: "0" }}
               >
-                <Box width="30px" height="30px" display="flex" alignItems="center" justifyContent="center">
-                  <FeatherIcon
-                    icon="chevron-left"
-                    size={24}
-                    color="gray.500"
-                    onClick={handlePrevWeek}
-                    tooltipText="Previous Week"
-                  />
-                </Box>
-                <Box width="30px" height="30px" display="flex" alignItems="center" justifyContent="center">
-                  <FeatherIcon
-                    icon="chevron-right"
-                    size={24}
-                    color="gray.500"
-                    onClick={handleNextWeek}
-                    tooltipText="Next Week"
-                  />
-                </Box>
-                <Box width="30px" height="30px" display="flex" alignItems="center" justifyContent="center">
-                  <FeatherIcon
-                    icon="calendar"
-                    size={24}
-                    color="gray.500"
-                    onClick={handleCurrentWeek}
-                    tooltipText="Current Week"
-                  />
-                </Box>
-                <Box width="30px" height="30px" display="flex" alignItems="center" justifyContent="center">
-                  <FeatherIcon
-                    icon="list"
-                    size={24}
-                    color="gray.500"
-                    onClick={handleViewChange}
-                    tooltipText="Jobs List"
-                  />
-                </Box>
+                <FeatherIcon
+                  icon="chevron-left"
+                  size={24}
+                  color="gray.400"
+                  onClick={handlePrevWeek}
+                  tooltipText="Previous Week"
+                />
+                <FeatherIcon
+                  icon="chevron-right"
+                  size={24}
+                  color="gray.400"
+                  onClick={handleNextWeek}
+                  tooltipText="Next Week"
+                />
+                <FeatherIcon
+                  icon="calendar"
+                  size={24}
+                  color="gray.400"
+                  onClick={handleCurrentWeek}
+                  tooltipText="Current Week"
+                />
+                <FeatherIcon
+                  icon="list"
+                  size={24}
+                  color="gray.400"
+                  onClick={handleViewChange}
+                  tooltipText="Jobs"
+                />
               </HStack>
             ) : (
-              <Box width="30px" height="30px" display="flex" alignItems="center" justifyContent="center">
+              <Box mt={1}>
                 <FeatherIcon
                   icon="x"
                   size={24}
-                  color="gray.500"
+                  color="gray.400"
                   onClick={handleViewChange}
                   tooltipText="Close"
                 />
@@ -328,9 +386,61 @@ const App = () => {
             </motion.div>
           )}
         </AnimatePresence>
+        <Box
+          position="fixed"
+          bottom="50%"
+          left="4"
+          zIndex="1000"
+          opacity={0}
+          transition="opacity 0.3s"
+          className="fab-left"
+          transform="translateY(50%)"
+        >
+          <IconButton
+            icon={<FeatherIcon icon="chevron-left" />}
+            aria-label="Previous Week"
+            onClick={handlePrevWeek}
+            size="lg"
+            borderRadius="full"
+            boxShadow="md"
+            bg="blue.500"
+            color="white"
+            _hover={{ bg: "blue.600" }}
+          />
+        </Box>
+        <Box
+          position="fixed"
+          bottom="50%"
+          right="4"
+          zIndex="1000"
+          opacity={0}
+          transition="opacity 0.3s"
+          className="fab-right"
+          transform="translateY(50%)"
+        >
+          <IconButton
+            icon={<FeatherIcon icon="chevron-right" />}
+            aria-label="Next Week"
+            onClick={handleNextWeek}
+            size="lg"
+            borderRadius="full"
+            boxShadow="md"
+            bg="blue.500"
+            color="white"
+            _hover={{ bg: "blue.600" }}
+          />
+        </Box>
       </Flex>
+      <style jsx>{`
+        .fab-left:hover, .fab-right:hover {
+          opacity: 1 !important;
+        }
+        .fab-left:hover ~ .fab-left, .fab-right:hover ~ .fab-right {
+          opacity: 1 !important;
+        }
+      `}</style>
     </ChakraProvider>
-  );    
+  );
 };
 
 export default App;

@@ -15,7 +15,7 @@
   border-radius: 4px;
   cursor: pointer;
   text-decoration: none;
-  color: #2B6CB0;
+  color: #2a4365;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -26,9 +26,9 @@
 }
 
 .pagination-active .page-link {
-  background-color: #2B6CB0;
+  background-color: #2a4365;
   color: white;
-  border-color: #2B6CB0;
+  border-color: #2a4365;
 }
 
 .pagination-disabled .page-link {

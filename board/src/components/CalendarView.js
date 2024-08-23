@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box, Grid, Text, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody,
-  Table, Thead, Tbody, Tr, Th, Td, Flex, Tooltip, useToast, ChakraProvider, IconButton, Skeleton, Input
+  Table, Thead, Tbody, Tr, Th, Td, Flex, Tooltip, useToast, ChakraProvider, IconButton, Skeleton, Input,
+  Popover, PopoverTrigger, PopoverContent, PopoverArrow, PopoverCloseButton
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { Info, Plus, Search } from 'react-feather';
+import { Info, Plus, Search, Zap, Clipboard, CheckCircle } from 'react-feather';
 import axios from 'axios';
 
 const MotionBox = motion(Box);
@@ -116,7 +117,7 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
         case 'Steel':
           return { color: 'red.500', label: 'Steel' };
         case 'Vinyl':
-          return { color: 'green.500', label: 'Vinyl' };
+          return { color: 'yellow.500', label: 'Vinyl' };
         default:
           return { color: 'gray.500', label: 'Unknown' };
       }
@@ -156,10 +157,6 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
         {isLoading ? (
           <>
             <Skeleton height="30px" width="70px" mt={2} mb={3} pt={2} borderRadius="md" />
-            <Skeleton height="100px" width="100%" borderRadius="md" mb={2} boxShadow="md" />
-            <Skeleton height="100px" width="100%" borderRadius="md" mb={2} boxShadow="md" />
-            <Skeleton height="100px" width="100%" borderRadius="md" mb={2} boxShadow="md" />
-            <Skeleton height="100px" width="100%" borderRadius="md" mb={2} boxShadow="md" />
             <Skeleton height="100px" width="100%" borderRadius="md" mb={2} boxShadow="md" />
             <Skeleton height="100px" width="100%" borderRadius="md" mb={2} boxShadow="md" />
             <Skeleton height="40px" width="20%" borderRadius="md" mt={4} />
@@ -215,16 +212,24 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
                             </Text>
                           </Tooltip>
                           <Tooltip label={<Text fontWeight="normal" fontSize="sm">{facilityColor(job.Facility).label}</Text>} isDisabled={false}>
-                            <Box w="8px" h="8px" borderRadius="full" bg={facilityColor(job.Facility).color} ml={1}></Box>
+                            <Box w="9px" h="9px" borderRadius="full" bg={facilityColor(job.Facility).color} ml={1}></Box>
                           </Tooltip>
                           {job.TestFit === 'yes' && (
                             <Tooltip label={<Text fontWeight="normal" fontSize="sm">{job.Schedule.some(date => date.includes('(Test Fit)')) ? "Test Fit Scheduled" : "Requires Test Fit"}</Text>} isDisabled={false}>
-                              <Box w="8px" h="8px" borderRadius="full" bg='purple.500' position="relative" ml={1}></Box>
+                              <Box ml={1}>
+                                {job.Schedule.some(date => date.includes('(Test Fit)')) ? (
+                                  <CheckCircle size={10} style={{ color: '#9B59B6' }} />
+                                ) : (
+                                  <Clipboard size={10} style={{ color: '#9B59B6' }} />
+                                )}
+                              </Box>
                             </Tooltip>
                           )}
                           {job.Rush === 'yes' && (
                             <Tooltip label={<Text fontWeight="normal" fontSize="sm">Rush</Text>} isDisabled={false}>
-                              <Box w="8px" h="8px" borderRadius="full" bg='pink.500' ml={1}></Box>
+                              <Box ml={1}>
+                                <Zap size={10} style={{ color: '#D53F8C' }} />
+                              </Box>
                             </Tooltip>
                           )}
                         </Box>
@@ -483,33 +488,32 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
           <ModalContent>
             <ModalHeader>
               Select Jobs for {selectedDate ? selectedDate.toDateString() : ''}
-              <Tooltip
-                label={
+              <Popover isOpen={isTooltipVisible} placement="bottom" closeOnBlur={true} zIndex={4000}>
+                <PopoverTrigger>
+                  <IconButton
+                    aria-label="Information about job scheduling"
+                    icon={<Info size={16} />}
+                    variant="ghost"
+                    size="sm"
+                    ml={2}
+                    color="gray.500"
+                    onMouseEnter={() => setIsTooltipVisible(true)}
+                    onMouseLeave={() => setIsTooltipVisible(false)}
+                  />
+                </PopoverTrigger>
+                <PopoverContent zIndex={4000} boxShadow="lg" borderRadius="md" p={4} bg="gray.50" width="400px" portalProps={{ containerRef: document.body }}>
+                  <PopoverArrow />
                   <Box>
-                    <Text>• Single-click to schedule an installation.</Text>
-                    <Text>• Double-click to schedule a test fit.</Text>
-                    <Text>• Scheduling a test fit does not add the job value to the total value for a given day.</Text>
-                    <Text>• Jobs scheduled for at least one day appear lighter but are still selectable.</Text>
-                    <Text>• Multiple jobs can be selected.</Text>
-                    <Text>• The monetary value of a job is evenly divided across all dates it is scheduled for.</Text>
+                    <Text fontWeight="bold" mb={2} color="gray.600">Job Scheduling Instructions</Text>
+                    <Text fontSize="sm" color="gray.600">• Single-click to schedule an installation.</Text>
+                    <Text fontSize="sm" color="gray.600">• Double-click to schedule a test fit.</Text>
+                    <Text fontSize="sm" color="gray.600">• Scheduling a test fit does not add the job value to the total value for a given day.</Text>
+                    <Text fontSize="sm" color="gray.600">• Jobs scheduled for at least one day appear lighter but are still selectable.</Text>
+                    <Text fontSize="sm" color="gray.600">• Multiple jobs can be selected.</Text>
+                    <Text fontSize="sm" color="gray.600">• The monetary value of a job is evenly divided across all dates it is scheduled for.</Text>
                   </Box>
-                }
-                fontSize="md"
-                fontWeight="400"
-                placement="bottom"
-                isOpen={isTooltipVisible}
-              >
-                <IconButton
-                  aria-label="Information about job scheduling"
-                  icon={<Info size={16} />}
-                  variant="ghost"
-                  size="sm"
-                  ml={2}
-                  color="gray.500"
-                  onMouseEnter={() => setIsTooltipVisible(true)}
-                  onMouseLeave={() => setIsTooltipVisible(false)}
-                />
-              </Tooltip>
+                </PopoverContent>
+              </Popover>
             </ModalHeader>
             <ModalBody>
               <Box mb="20px" display="flex" justifyContent="flex-end">
@@ -525,9 +529,9 @@ const CalendarView = ({ currentDate, weekNumber, setCurrentDate, isAnimating, se
                   />
                 </Box>
               </Box>
-              <Box maxHeight="650px" overflowY="auto">
+              <Box maxHeight="570px" overflowY="auto">
                 <Table>
-                  <Thead position="sticky" top="0" bg="white" zIndex="docked" boxShadow="sm">
+                  <Thead position="sticky" top="0" bg="white" boxShadow="sm">
                     <Tr>
                       <Th>Job Number</Th>
                       <Th>Client</Th>
